@@ -21,6 +21,19 @@ PRIVATE_MEMBER_FIELDS = {"phone", "email", "password_hash", "identities", "googl
                          "stripe_customer_id", "stripe_subscription_id", "billing_tier", "plan_selected", "paid_at", "billing_status"}
 
 
+# Database projection for reading ANOTHER member: the private fields are never
+# fetched, so a password hash cannot leave the database layer by mistake.
+# (public_member() below still strips them as a second layer.)
+PUBLIC_USER_PROJECTION = {field: 0 for field in sorted(PRIVATE_MEMBER_FIELDS)}
+
+
+async def public_users(db, ids=None, limit: int = 200) -> dict:
+    """{user id: user doc without private fields}, optionally only for ids."""
+    query = {} if ids is None else {"_id": {"$in": list(ids)}}
+    docs = await db.users.find(query, PUBLIC_USER_PROJECTION).to_list(limit)
+    return {d["_id"]: d for d in docs}
+
+
 def public_member(user: dict) -> dict:
     """What other members may see. Phone numbers are never exposed (peer messaging rule)."""
     return {k: v for k, v in user.items() if k not in PRIVATE_MEMBER_FIELDS and k != "_id"}

@@ -324,3 +324,21 @@ def test_microsoft_token_verification_drops_the_email(monkeypatch):
     assert out["email"] == "boss@example.com" and out["email_verified"] is True
 
 
+
+
+def test_signup_retries_when_the_derived_handle_is_taken_concurrently(monkeypatch):
+    from app.main import ensure_indexes
+    from app.routers import meta
+    client, db = make_client(**CREDS["google"])
+    asyncio.run(ensure_indexes(db))
+    asyncio.run(db.users.insert_one({"_id": "existing", "handle": "racehandle", "role": "member", "tier": "free"}))
+    picks = iter(["racehandle", "racehandle2"])
+
+    async def racing_unique_handle(db_, email):
+        return next(picks)
+
+    monkeypatch.setattr(meta, "_unique_handle", racing_unique_handle)
+    r = client.post("/api/auth/google/token", json={"token": tok("race@example.com", "g-race")})
+    assert r.status_code == 200, r.text
+    assert r.json()["user"]["handle"] == "racehandle2"
+    assert asyncio.run(db.users.count_documents({"handle": "racehandle"})) == 1

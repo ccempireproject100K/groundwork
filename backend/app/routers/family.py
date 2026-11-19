@@ -1,6 +1,7 @@
 """Family mode: member controls visibility; every share defaults off."""
 from fastapi import Depends, HTTPException, Request
 from pydantic import BaseModel, Field
+from .. import safety
 from ..deps import get_current_user
 from ._stub import stub_router
 
@@ -34,7 +35,7 @@ async def put_vis(body: VisIn, request: Request, user=Depends(get_current_user))
 
 @router.post("/family_mode/family_members", status_code=201)
 async def approve_member(body: ApproveIn, request: Request, user=Depends(get_current_user)):
-    fam = await request.app.state.db.users.find_one({"handle": body.family_handle, "role": "family"})
+    fam = await request.app.state.db.users.find_one({"handle": body.family_handle, "role": "family"}, safety.PUBLIC_USER_PROJECTION)
     if not fam:
         raise HTTPException(404, "family account not found")
     # Note: mongomock-motor $addToSet with $each is avoided for compat; store both id and handle plainly.

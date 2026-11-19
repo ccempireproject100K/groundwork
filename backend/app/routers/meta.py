@@ -1,5 +1,6 @@
 """Health, feature registry, plan table, and auth (member/family/admin)."""
 import uuid
+from pymongo.errors import DuplicateKeyError
 from starlette.concurrency import run_in_threadpool
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
@@ -56,7 +57,10 @@ async def register(body: RegisterIn, request: Request):
     doc = {"_id": uid, "handle": body.handle, "password_hash": security.hash_password(body.password), "role": body.role, "tier": "free", "phone": body.phone,
            "welcome_choice": body.welcome_choice,
            "welcome_display_name": welcome.sanitize_display_name(body.welcome_display_name)}
-    await db.users.insert_one(doc)
+    try:
+        await db.users.insert_one(doc)
+    except DuplicateKeyError:  # lost a race for the same handle
+        raise HTTPException(409, "handle taken")
     # FREE welcome trigger (owner's final rules, 2026-11-03): account creation
     # is the onboarding and the banner choice arrives with registration, so a
     # registration carrying a choice, while uncharged, earns the FREE-tagged
@@ -159,15 +163,19 @@ async def _federated_resolve(request: Request, provider: str, claims: dict):
             raise HTTPException(422, "Apple did not return an email address")
     elif provider != "microsoft" and (not email or not claims.get("email_verified")):
         raise HTTPException(401, "provider did not return a verified email address")
-    uid = uuid.uuid4().hex
-    doc = {"_id": uid, "handle": await _unique_handle(db, email or claims.get("name") or "member"),
-           "password_hash": None, "role": "member", "tier": "free",
-           "phone": None, "identities": [{"provider": provider, "sub": sub}],
-           "auth_providers": [provider]}
-    if email:
-        doc["email"] = email
-    await db.users.insert_one(doc)
-    return doc
+    for _attempt in range(5):  # a concurrent sign-up may take the derived handle
+        doc = {"_id": uuid.uuid4().hex, "handle": await _unique_handle(db, email or claims.get("name") or "member"),
+               "password_hash": None, "role": "member", "tier": "free",
+               "phone": None, "identities": [{"provider": provider, "sub": sub}],
+               "auth_providers": [provider]}
+        if email:
+            doc["email"] = email
+        try:
+            await db.users.insert_one(doc)
+            return doc
+        except DuplicateKeyError:
+            continue
+    raise HTTPException(503, "could not create the account, try again")
 
 
 def _federated_session(request: Request, user: dict) -> dict:
