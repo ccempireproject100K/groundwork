@@ -13,7 +13,6 @@ class RegisterIn(BaseModel):
     password: str = Field(min_length=8, max_length=200)
     role: str = "member"
     phone: str | None = None
-    tier: str = "free"
     # Welcome banner choice: onboarding's FIRST question. None = not chosen
     # yet, which defaults to NO public announcement. See app/welcome.py.
     welcome_choice: str | None = None
@@ -43,17 +42,18 @@ async def plans():
 
 @router.post("/auth/register", status_code=201)
 async def register(body: RegisterIn, request: Request):
-    if body.role not in security.ROLES:
+    # Self-service sign-up only creates member or family accounts, always on
+    # the free plan. Any tier supplied by the client is ignored: a paid plan
+    # is granted only by a confirmed payment (app/billing.py).
+    if body.role not in security.REGISTRABLE_ROLES:
         raise HTTPException(422, "invalid role")
-    if body.tier not in ("free", "paid"):
-        raise HTTPException(422, "invalid tier")
     if body.welcome_choice is not None and body.welcome_choice not in welcome.CHOICES:
         raise HTTPException(422, "invalid welcome choice")
     db = request.app.state.db
     if await db.users.find_one({"handle": body.handle}):
         raise HTTPException(409, "handle taken")
     uid = uuid.uuid4().hex
-    doc = {"_id": uid, "handle": body.handle, "password_hash": security.hash_password(body.password), "role": body.role, "tier": body.tier, "phone": body.phone,
+    doc = {"_id": uid, "handle": body.handle, "password_hash": security.hash_password(body.password), "role": body.role, "tier": "free", "phone": body.phone,
            "welcome_choice": body.welcome_choice,
            "welcome_display_name": welcome.sanitize_display_name(body.welcome_display_name)}
     await db.users.insert_one(doc)
@@ -61,8 +61,8 @@ async def register(body: RegisterIn, request: Request):
     # is the onboarding and the banner choice arrives with registration, so a
     # registration carrying a choice, while uncharged, earns the FREE-tagged
     # announcement. Selecting a paid tier is NOT a payment: the paid
-    # announcement can only come from welcome.note_payment_collected() once a
-    # real payment flow calls it (none exists). Never on login or fabricated.
+    # announcement can only come from welcome.note_payment_collected(), which
+    # the billing webhook calls once a payment is confirmed. Never on login.
     await welcome.note_onboarding_completed(db, uid, body.welcome_choice,
                                             body.welcome_display_name, body.handle)
     token = security.make_token(request.app.state.settings.jwt_secret, uid, body.role, request.app.state.settings.token_ttl_minutes)

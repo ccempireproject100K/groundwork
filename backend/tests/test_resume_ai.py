@@ -13,10 +13,10 @@ from app.routers import work as work_router
 from app.routers.work import ResumeIn
 
 
+from helpers import register_user
+
 def reg(client, handle="alex", tier="paid"):
-    r = client.post("/api/auth/register", json={"handle": handle, "password": "password123", "tier": tier, "phone": "817-555-0100"})
-    assert r.status_code == 201, r.text
-    return r.json()
+    return register_user(client, handle, tier=tier, phone="817-555-0100")
 
 
 def auth(tok):

@@ -45,3 +45,21 @@ def test_ensure_indexes_runs_on_mock_db():
 
     info = asyncio.run(go())
     assert any("handle" in k for k in info)
+
+
+def test_registration_always_creates_a_free_account(client):
+    r = client.post("/api/auth/register", json={"handle": "reg_tier", "password": "password123", "tier": "paid"})
+    assert r.status_code == 201
+    assert r.json()["user"]["tier"] == "free"
+    tok = r.json()["token"]
+    me = client.get("/api/auth/me", headers={"Authorization": f"Bearer {tok}"}).json()
+    assert me["tier"] == "free"
+
+
+def test_registration_accepts_only_member_or_family_roles(client):
+    for role in ("admin", "superuser", ""):
+        r = client.post("/api/auth/register", json={"handle": f"reg_{role or 'blank'}", "password": "password123", "role": role})
+        assert r.status_code == 422, role
+    for role in ("member", "family"):
+        r = client.post("/api/auth/register", json={"handle": f"ok_{role}", "password": "password123", "role": role})
+        assert r.status_code == 201 and r.json()["user"]["role"] == role

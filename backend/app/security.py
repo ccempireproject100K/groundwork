@@ -9,6 +9,8 @@ from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerificationError
 
 ROLES = ("member", "family", "admin")
+# Roles a person can choose at sign-up. Admin is never self-service.
+REGISTRABLE_ROLES = ("member", "family")
 _hasher = PasswordHasher()
 _DUMMY = _hasher.hash("groundwork-timing-equalizer")
 

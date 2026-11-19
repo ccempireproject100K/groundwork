@@ -1,10 +1,10 @@
 """Phase 6: academy curriculum guardrails (course-generation skill)."""
 from app.providers import COURSES
 
+from helpers import register_user
+
 def reg(client, handle="phase6user", tier="paid"):
-    r = client.post("/api/auth/register", json={"handle": handle, "password": "password123", "phone": "817-555-0100", "tier": tier})
-    assert r.status_code == 201, r.text
-    return r.json()
+    return register_user(client, handle, tier=tier, phone="817-555-0100")
 def auth(t): return {"Authorization": f"Bearer {t}"}
 
 def test_all_tracks_draft_for_review():

@@ -3,10 +3,10 @@ import json, logging
 import pytest
 from app import crisis_reply, moderation, wipe
 
+from helpers import register_user
+
 def reg(client, handle, role="member"):
-    r = client.post("/api/auth/register", json={"handle": handle, "password": "password123", "tier": "free", "phone": "817-555-0199", "role": role})
-    assert r.status_code == 201, r.text
-    return r.json()
+    return register_user(client, handle, role=role, phone="817-555-0199")
 def auth(t): return {"Authorization": f"Bearer {t}"}
 
 @pytest.mark.parametrize("text", ["I want to KILL MYSELF", "feeling suicidal tonight", "I think I'm going to overdose",
