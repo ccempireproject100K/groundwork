@@ -73,7 +73,7 @@ export default function SettingsPage() {
     // Federated callback lands here as #token=... (see backend meta.py).
     if (window.location.hash.startsWith("#token=")) {
       setToken(window.location.hash.slice("#token=".length));
-      window.location.hash = "";
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
     }
     loadMe();
     getAuthProviders().then((r) => setProviders(r.providers || [])).catch(() => setProviders([]));
