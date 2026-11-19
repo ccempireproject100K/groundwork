@@ -24,6 +24,10 @@ async def ensure_indexes(db) -> None:
             await db[coll].create_index(keys)
         except Exception:
             pass
+    try:  # sign-in counters clean themselves up
+        await db["login_attempts"].create_index("expires_at", expireAfterSeconds=0)
+    except Exception:
+        pass
 
 
 def create_app(settings: Settings | None = None, db=None) -> FastAPI:

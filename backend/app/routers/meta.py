@@ -3,7 +3,7 @@ import uuid
 from starlette.concurrency import run_in_threadpool
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
-from .. import federated, registry, safety, security, tiers, welcome
+from .. import federated, ratelimit, registry, safety, security, tiers, welcome
 from ..deps import get_current_user
 
 router = APIRouter(prefix="/api", tags=["meta"])
@@ -71,10 +71,17 @@ async def register(body: RegisterIn, request: Request):
 @router.post("/auth/login")
 async def login(body: LoginIn, request: Request):
     db = request.app.state.db
+    settings = request.app.state.settings
+    pairs = ratelimit.keys_for(settings, ratelimit.client_ip(request, settings.trusted_proxies), body.handle)
+    wait = await ratelimit.locked_for(db, pairs)
+    if wait:
+        raise HTTPException(429, "too many sign-in attempts, try again later", headers={"Retry-After": str(wait)})
     user = await db.users.find_one({"handle": body.handle})
     if not user or not security.verify_password(user.get("password_hash"), body.password):
+        await ratelimit.record_failure(db, settings, pairs)
         raise HTTPException(401, "invalid credentials")
-    token = security.make_token(request.app.state.settings.jwt_secret, user["_id"], user.get("role", "member"), request.app.state.settings.token_ttl_minutes)
+    await ratelimit.clear_handle(db, settings, body.handle)
+    token = security.make_token(settings.jwt_secret, user["_id"], user.get("role", "member"), settings.token_ttl_minutes)
     return {"token": token, "user": safety.public_member(user)}
 
 @router.get("/auth/me")

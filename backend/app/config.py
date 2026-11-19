@@ -49,7 +49,23 @@ class Settings:
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""
     public_url: str = ""
+    # Sign-in rate limiting (app/ratelimit.py). A limit of 0 turns it off.
+    login_max_attempts_ip: int = 30
+    login_max_attempts_handle: int = 10
+    login_window_seconds: int = 900
+    login_lockout_seconds: int = 900
+    trusted_proxies: int = 0
 
+
+
+def _int_env(name: str, default: int) -> int:
+    raw = os.environ.get(name, "").strip()
+    if not raw:
+        return default
+    try:
+        return max(0, int(raw))
+    except ValueError:
+        raise RuntimeError(f"{name} must be a whole number") from None
 
 
 def load_settings() -> Settings:
@@ -81,4 +97,9 @@ def load_settings() -> Settings:
         stripe_secret_key=os.environ.get("GW_STRIPE_SECRET_KEY", "").strip(),
         stripe_webhook_secret=os.environ.get("GW_STRIPE_WEBHOOK_SECRET", "").strip(),
         public_url=os.environ.get("GW_PUBLIC_URL", "").strip(),
+        login_max_attempts_ip=_int_env("GW_LOGIN_MAX_ATTEMPTS_IP", 30),
+        login_max_attempts_handle=_int_env("GW_LOGIN_MAX_ATTEMPTS_HANDLE", 10),
+        login_window_seconds=max(1, _int_env("GW_LOGIN_WINDOW_SECONDS", 900)),
+        login_lockout_seconds=max(1, _int_env("GW_LOGIN_LOCKOUT_SECONDS", 900)),
+        trusted_proxies=_int_env("GW_TRUSTED_PROXIES", 0),
     )
