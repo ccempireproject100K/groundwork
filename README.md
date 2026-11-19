@@ -24,12 +24,13 @@ Set by Brann on 2026-11-19, the same on both sites: **Free $0** and **Paid $3.99
 cd backend && python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
 .venv/bin/python -m pytest -q
 GW_JWT_SECRET=$(python3 -c 'import secrets;print(secrets.token_hex(32))') .venv/bin/uvicorn app.main:create_app --factory --reload
-cd ../frontend && npm install && npx vitest run && npm run dev
+cd ../frontend && npm ci && npx vitest run && npm run build && npm run dev
 ```
+Every backend environment variable is listed (names only) in `backend/.env.example`; only `GW_JWT_SECRET` is required. `GW_VAULT_KEK` is the base64 of 32 random bytes (`python3 -c 'import base64,os;print(base64.b64encode(os.urandom(32)).decode())'`); the vault refuses to run without it.
 
 ## Optional features that are off by default
 - **AI resume assist** (talk it through, or paste an old resume; the draft is always reviewed by the member): refuses with a plain 503 until the env var `GW_META_MODEL_API_KEY` is set (optional `GW_META_MODEL_API_URL`). No paid API call is ever made without it; with it, every call is metered per member per month by `backend/app/ai_bank.py`. The owner has not approved this spending, so leave the key unset. Building a resume by hand never depends on it.
-- **Federated sign-in** (Google, Facebook, Microsoft, LinkedIn): each provider is invisible until its `GW_<PROVIDER>_CLIENT_ID` and secret are set. Apple is ready but gated.
+- **Federated sign-in** (Google, Facebook, Microsoft, LinkedIn): each provider is invisible until its `GW_<PROVIDER>_CLIENT_ID` and secret are set. Apple is ready but gated. Set each provider's redirect URI (`GW_<PROVIDER>_REDIRECT_URI`) to the backend's `/api/auth/<provider>/callback`, and keep `GW_FRONTEND_ORIGIN` pointed at the frontend that should receive the session. Sign-in state expires after 10 minutes and is bound to the browser that started it with a short-lived cookie.
 - **Welcome banner**: members choose a display name, anonymous, or opt out; nothing is announced until they choose.
 
 ## Relation to other repos
