@@ -147,3 +147,19 @@ def test_password_regression(client):
     bad = client.post("/api/auth/login",
                       json={"handle": "plainuser", "password": "nope-nope"})
     assert bad.status_code == 401
+
+
+def test_callback_requires_matching_browser_cookie():
+    client, db = make_client(**CREDS["google"])
+    state = federated.new_state("google")  # state issued, but never to this browser
+    cb = client.get("/api/auth/google/callback",
+                    params={"code": tok("x@example.com", "g-x"), "state": state},
+                    follow_redirects=False)
+    assert cb.status_code == 400
+
+
+def test_state_expires(monkeypatch):
+    state = federated.new_state("google")
+    late = federated._STATES[state][1] + 1
+    monkeypatch.setattr(federated.time, "monotonic", lambda: late)
+    assert federated.consume_state(state, "google") is False

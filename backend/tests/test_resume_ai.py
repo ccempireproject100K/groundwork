@@ -249,3 +249,21 @@ def test_pdf_filename_is_sanitized():
     assert _pdf_filename({"full_name": "!!!"}) == "resume.pdf"
     assert _pdf_filename({"full_name": ""}) == "resume.pdf"
     assert _pdf_filename({}) == "resume.pdf"
+
+
+def test_concurrent_calls_cannot_exceed_pool():
+    import asyncio
+    from mongomock_motor import AsyncMongoMockClient
+    from app import ai_bank
+
+    async def run():
+        db = AsyncMongoMockClient()["gw_bank_race"]
+        results = await asyncio.gather(*[ai_bank.reserve(db, "u1", "paid", "guided") for _ in range(20)])
+        return sum(1 for check, rid in results if rid)
+
+    assert run_sync(run()) == ai_bank.ENTRY_POOL_CENTS // ai_bank.WORST_CASE_CENTS["guided"]
+
+
+def run_sync(coro):
+    import asyncio
+    return asyncio.run(coro)

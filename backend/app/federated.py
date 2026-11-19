@@ -14,8 +14,9 @@ Discipline (owner order 2026-11-10):
   OIDC id_token — the access token is validated via Graph
   debug_token (valid + issued for OUR app) and /me; a Facebook-
   returned email counts as verified. Microsoft deviation: no
-  email_verified claim exists; a signature/audience/issuer-verified
-  token's email claim is treated as the verified email.
+  email_verified claim exists; the email counts as verified only for
+  personal Microsoft accounts (consumers tenant) or when the tenant
+  asserts domain ownership through the xms_edov claim.
 - Linking by VERIFIED email or the durable (provider, sub) identity
   stored on the user record (``identities`` — inside the users
   document, so the one-tap wipe in app/wipe.py covers it). Apple
@@ -31,6 +32,7 @@ Discipline (owner order 2026-11-10):
 from __future__ import annotations
 
 import secrets as _secrets
+import time
 import urllib.parse
 
 import jwt
@@ -200,6 +202,9 @@ def verify_facebook_token(settings, access_token: str) -> dict:
             "name": profile.get("name") or ""}
 
 
+_MS_CONSUMERS_TENANT = "9188040d-6c67-4c5b-b112-36a304b66dad"
+
+
 def verify_provider_token(settings, provider: str, token: str) -> dict:
     """THE verification entry point (tests monkeypatch this). Returns
     {sub, email, email_verified, name}; raises ValueError on failure."""
@@ -215,21 +220,36 @@ def verify_provider_token(settings, provider: str, token: str) -> dict:
     if meta["require_email_verified"] and out["email"] \
             and not out["email_verified"]:
         raise ValueError("provider email is not verified")
-    if provider == "microsoft" and out["email"]:
-        out["email_verified"] = True  # documented deviation, see header
+    if provider == "microsoft":
+        out["email_verified"] = bool(out["email"]) and (
+            claims.get("tid") == _MS_CONSUMERS_TENANT
+            or str(claims.get("xms_edov", "")).lower() in ("1", "true"))
     return out
 
 
-# OAuth state: single-process in-memory set (state value -> provider).
-# Holds NO member data, so it stays out of the wipe collections.
-_STATES: dict[str, str] = {}
+# OAuth state: single-process in-memory map (state value -> (provider,
+# expiry)). Holds NO member data, so it stays out of the wipe collections.
+# Entries expire after STATE_TTL_SECONDS and the map is size-capped.
+STATE_TTL_SECONDS = 600
+_STATE_CAP = 5000
+_STATES: dict[str, tuple[str, float]] = {}
+
+
+def _prune_states(now: float) -> None:
+    for k in [k for k, (_, exp) in _STATES.items() if exp <= now]:
+        _STATES.pop(k, None)
+    while len(_STATES) >= _STATE_CAP:
+        _STATES.pop(next(iter(_STATES)), None)
 
 
 def new_state(provider: str) -> str:
+    now = time.monotonic()
+    _prune_states(now)
     state = _secrets.token_urlsafe(32)
-    _STATES[state] = provider
+    _STATES[state] = (provider, now + STATE_TTL_SECONDS)
     return state
 
 
 def consume_state(state: str, provider: str) -> bool:
-    return _STATES.pop(state, None) == provider
+    entry = _STATES.pop(state, None)
+    return bool(entry) and entry[0] == provider and entry[1] > time.monotonic()

@@ -21,7 +21,9 @@ Rules (owner's, 2026-11-01):
 - The pool is checked BEFORE a call (used + worst case <= pool); when the
   check fails, no call is made. Fail-closed: any ledger error blocks.
 """
+import asyncio
 import math
+import uuid
 from datetime import datetime, timezone
 
 # Published Meta Model API rates for Muse Spark, verified 2026-10-30
@@ -76,6 +78,36 @@ async def check_pool(db, user_id: str, tier: str, path: str) -> dict:
         return {"ok": False, "pool_cents": pool, "used_cents": pool, "error": "ledger_unavailable"}
     worst = WORST_CASE_CENTS[path]
     return {"ok": used + worst <= pool, "pool_cents": pool, "used_cents": used}
+
+
+_user_locks: dict[str, asyncio.Lock] = {}
+
+
+async def reserve(db, user_id: str, tier: str, path: str) -> tuple[dict, str | None]:
+    """Check the pool and, in the same locked step, hold the worst-case cost in
+    the ledger so concurrent calls cannot all pass the same pre-flight check.
+    Returns (check, reservation_id); reservation_id is None when refused.
+    Call release() once the actual usage has been debited (or the call failed)."""
+    lock = _user_locks.setdefault(user_id, asyncio.Lock())
+    async with lock:
+        check = await check_pool(db, user_id, tier, path)
+        if not check["ok"]:
+            return check, None
+        rid = uuid.uuid4().hex
+        try:
+            await db.ai_usage.insert_one({
+                "_id": rid, "user_id": user_id, "feature": "resume_ai_assist", "path": path,
+                "pending": True, "input_tokens": 0, "output_tokens": 0,
+                "cents": WORST_CASE_CENTS[path],
+                "created_at": datetime.now(timezone.utc).isoformat()})
+        except Exception:
+            return {**check, "ok": False, "error": "ledger_unavailable"}, None
+        return check, rid
+
+
+async def release(db, reservation_id: str | None) -> None:
+    if reservation_id:
+        await db.ai_usage.delete_one({"_id": reservation_id})
 
 
 async def debit(db, user_id: str, path: str, usage: dict) -> dict:

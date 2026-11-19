@@ -88,6 +88,9 @@ async def me(user=Depends(get_current_user)):
 # Handle/password above is untouched.
 # ---------------------------------------------------------------------
 import re as _re
+import secrets as _secrets
+
+_STATE_COOKIE = "gw_oauth_state"
 from fastapi.responses import RedirectResponse
 
 
@@ -119,10 +122,10 @@ async def _federated_resolve(request: Request, provider: str, claims: dict):
     db = request.app.state.db
     sub = claims["sub"]
     # 1) durable identity match
-    async for user in db.users.find({}):
-        if any(i.get("provider") == provider and i.get("sub") == sub
-               for i in (user.get("identities") or [])):
-            return user
+    user = await db.users.find_one(
+        {"identities": {"$elemMatch": {"provider": provider, "sub": sub}}})
+    if user is not None:
+        return user
     email = claims.get("email")
     # 2) link by VERIFIED email (never for apple — private relay)
     if provider != "apple" and email and claims.get("email_verified"):
@@ -176,14 +179,20 @@ async def federated_start(provider: str, request: Request):
     state = federated.new_state(provider)
     url = federated.build_authorize_url(settings, provider, state,
                                         str(request.base_url))
-    return RedirectResponse(url, status_code=307)
+    resp = RedirectResponse(url, status_code=307)
+    # Bind the sign-in attempt to this browser: the callback must present it.
+    resp.set_cookie(_STATE_COOKIE, state, max_age=federated.STATE_TTL_SECONDS,
+                    httponly=True, samesite="lax",
+                    secure=request.url.scheme == "https", path="/api/auth")
+    return resp
 
 
 @router.get("/auth/{provider}/callback")
 async def federated_callback(provider: str, request: Request,
                              code: str = "", state: str = ""):
     _require_provider(request, provider)
-    if not federated.consume_state(state, provider):
+    bound = request.cookies.get(_STATE_COOKIE, "")
+    if not federated.consume_state(state, provider) or not _secrets.compare_digest(bound, state):
         raise HTTPException(400, "invalid or expired sign-in state")
     settings = request.app.state.settings
     try:
@@ -194,9 +203,11 @@ async def federated_callback(provider: str, request: Request,
         raise HTTPException(401, "provider sign-in could not be verified")
     user = await _federated_resolve(request, provider, claims)
     session = _federated_session(request, user)
-    return RedirectResponse(
+    resp = RedirectResponse(
         f"{settings.frontend_origin.rstrip('/')}/settings#token={session['token']}",
         status_code=307)
+    resp.delete_cookie(_STATE_COOKIE, path="/api/auth")
+    return resp
 
 
 @router.post("/auth/{provider}/callback")

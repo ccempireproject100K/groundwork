@@ -215,20 +215,23 @@ async def _run_resume_assist(request: Request, user, path: str, make_draft, echo
     if not resume_writer.configured:
         return JSONResponse(status_code=503, content={"detail": NOT_CONFIGURED_COPY})
     db = request.app.state.db
-    check = await ai_bank.check_pool(db, user["_id"], user.get("tier", "free"), path)
+    check, rid = await ai_bank.reserve(db, user["_id"], user.get("tier", "free"), path)
     if not check["ok"]:
         return JSONResponse(status_code=402, content={"detail": ai_bank.POOL_EMPTY_COPY,
                                                        "pool": {"pool_cents": check["pool_cents"], "used_cents": check["used_cents"]}})
     try:
-        data, usages = make_draft()
-    except ProviderNotConfigured:
-        return JSONResponse(status_code=503, content={"detail": NOT_CONFIGURED_COPY})
-    except ProviderBadOutput as e:
-        for u in e.usages:
+        try:
+            data, usages = make_draft()
+        except ProviderNotConfigured:
+            return JSONResponse(status_code=503, content={"detail": NOT_CONFIGURED_COPY})
+        except ProviderBadOutput as e:
+            for u in e.usages:
+                await ai_bank.debit(db, user["_id"], path, u)
+            return JSONResponse(status_code=502, content={"detail": "The AI couldn't write a clean draft from that. Nothing was saved — your words are right here, so you can try again or build it yourself for free.", **echo})
+        for u in usages:
             await ai_bank.debit(db, user["_id"], path, u)
-        return JSONResponse(status_code=502, content={"detail": "The AI couldn't write a clean draft from that. Nothing was saved — your words are right here, so you can try again or build it yourself for free.", **echo})
-    for u in usages:
-        await ai_bank.debit(db, user["_id"], path, u)
+    finally:
+        await ai_bank.release(db, rid)
     validated = ResumeIn(**data)
     return await _store_resume(request, user, validated.model_dump(),
                                extra={"source": "ai_guided" if path == "guided" else "ai_import", "ai_draft": True})
