@@ -14,9 +14,16 @@ Discipline (owner order 2026-11-10):
   OIDC id_token — the access token is validated via Graph
   debug_token (valid + issued for OUR app) and /me; a Facebook-
   returned email counts as verified. Microsoft deviation: no
-  email_verified claim exists; the email counts as verified only for
-  personal Microsoft accounts (consumers tenant) or when the tenant
-  asserts domain ownership through the xms_edov claim.
+  email_verified claim exists, so a Microsoft email is NEVER trusted:
+  Microsoft accounts link by the stable (provider, sub) identity only
+  and no Microsoft email is stored or matched.
+- OIDC nonce: a random nonce is stored with the sign-in state and the
+  id_token's nonce claim must match it.
+- Sign-in state (state, nonce, redirect URI, expiry) lives in the
+  database, so any worker can finish a sign-in another one started.
+- Redirect URI: from configuration (GW_<PROVIDER>_REDIRECT_URI, else
+  GW_PUBLIC_URL). The request Host header is used only when
+  GW_ENV is a development value.
 - Linking by VERIFIED email or the durable (provider, sub) identity
   stored on the user record (``identities`` — inside the users
   document, so the one-tap wipe in app/wipe.py covers it). Apple
@@ -31,9 +38,10 @@ Discipline (owner order 2026-11-10):
 """
 from __future__ import annotations
 
+import hashlib
 import secrets as _secrets
-import time
 import urllib.parse
+from datetime import datetime, timedelta, timezone
 
 import jwt
 from jwt import PyJWKClient
@@ -115,29 +123,42 @@ def enabled_providers(settings) -> list[dict]:
             if provider_enabled(settings, pid)]
 
 
+class RedirectNotConfigured(ValueError):
+    """No redirect URI is configured for the provider (production)."""
+
+
+DEV_ENVIRONMENTS = ("development", "dev", "local", "test")
+
+
 def redirect_uri(settings, provider: str, request_base: str = "") -> str:
+    """The OAuth redirect URI. Configuration wins; the request's own base URL
+    (derived from the Host header) is only a development convenience."""
     explicit = getattr(settings, PROVIDERS[provider]["redirect_attr"], "")
     if explicit:
         return explicit
-    base = (request_base or settings.frontend_origin).rstrip("/")
-    return f"{base}/api/auth/{provider}/callback"
+    public = (getattr(settings, "public_url", "") or "").strip().rstrip("/")
+    if public:
+        return f"{public}/api/auth/{provider}/callback"
+    if (getattr(settings, "environment", "production") or "").lower() in DEV_ENVIRONMENTS:
+        base = (request_base or settings.frontend_origin).rstrip("/")
+        return f"{base}/api/auth/{provider}/callback"
+    raise RedirectNotConfigured(f"{provider} redirect URI is not configured")
 
 
 def build_authorize_url(settings, provider: str, state: str,
-                        request_base: str = "") -> str:
+                        redirect: str, nonce: str | None = None) -> str:
     meta = PROVIDERS[provider]
     params = {
         "client_id": client_id(settings, provider),
-        "redirect_uri": redirect_uri(settings, provider, request_base),
+        "redirect_uri": redirect,
         "response_type": "code", "scope": meta["scopes"], "state": state,
     }
-    if meta["kind"] == "oidc":
-        params["nonce"] = _secrets.token_urlsafe(16)
+    if meta["kind"] == "oidc" and nonce:
+        params["nonce"] = nonce
     return meta["authorize_url"] + "?" + urllib.parse.urlencode(params)
 
 
-def exchange_code(settings, provider: str, code: str,
-                  request_base: str = "") -> str:
+def exchange_code(settings, provider: str, code: str, redirect: str) -> str:
     """Code -> token exchange (secret stays server-side). Returns the
     id_token (OIDC) or access token (Facebook). Tests monkeypatch."""
     import httpx
@@ -145,7 +166,7 @@ def exchange_code(settings, provider: str, code: str,
     meta = PROVIDERS[provider]
     resp = httpx.post(meta["token_url"], data={
         "grant_type": "authorization_code", "code": code,
-        "redirect_uri": redirect_uri(settings, provider, request_base),
+        "redirect_uri": redirect,
         "client_id": client_id(settings, provider),
         "client_secret": client_secret(settings, provider),
     }, timeout=15)
@@ -207,49 +228,74 @@ _MS_CONSUMERS_TENANT = "9188040d-6c67-4c5b-b112-36a304b66dad"
 
 def verify_provider_token(settings, provider: str, token: str) -> dict:
     """THE verification entry point (tests monkeypatch this). Returns
-    {sub, email, email_verified, name}; raises ValueError on failure."""
+    {sub, email, email_verified, name, nonce}; raises ValueError on failure."""
     meta = PROVIDERS[provider]
     if meta["kind"] == "facebook":
         return verify_facebook_token(settings, token)
     claims = verify_oidc_id_token(settings, provider, token)
-    email = claims.get("email") or claims.get("preferred_username")
+    email = claims.get("email")
     out = {"sub": str(claims["sub"]),
            "email": email.lower() if email else None,
            "email_verified": bool(claims.get("email_verified")),
-           "name": claims.get("name") or ""}
+           "name": claims.get("name") or "",
+           "nonce": claims.get("nonce")}
     if meta["require_email_verified"] and out["email"] \
             and not out["email_verified"]:
         raise ValueError("provider email is not verified")
     if provider == "microsoft":
-        out["email_verified"] = bool(out["email"]) and (
-            claims.get("tid") == _MS_CONSUMERS_TENANT
-            or str(claims.get("xms_edov", "")).lower() in ("1", "true"))
+        # Microsoft asserts no verified-email claim: never trust the address.
+        out["email"] = None
+        out["email_verified"] = False
     return out
 
 
-# OAuth state: single-process in-memory map (state value -> (provider,
-# expiry)). Holds NO member data, so it stays out of the wipe collections.
-# Entries expire after STATE_TTL_SECONDS and the map is size-capped.
+def nonce_matches(provider: str, expected: str | None, claims: dict) -> bool:
+    """OIDC providers must echo the nonce stored with the sign-in state."""
+    if PROVIDERS[provider]["kind"] != "oidc":
+        return True
+    got = claims.get("nonce")
+    return bool(expected) and isinstance(got, str) and _secrets.compare_digest(got, expected)
+
+
+# OAuth state: stored in the database (collection oauth_states) so it works
+# with several workers. Holds NO member data (random values, a provider name
+# and a redirect URI), so it stays out of the wipe collections. The state
+# value itself is never stored, only its SHA-256. Entries expire after
+# STATE_TTL_SECONDS (a TTL index also removes them) and are single use.
 STATE_TTL_SECONDS = 600
-_STATE_CAP = 5000
-_STATES: dict[str, tuple[str, float]] = {}
+STATE_COLLECTION = "oauth_states"
 
 
-def _prune_states(now: float) -> None:
-    for k in [k for k, (_, exp) in _STATES.items() if exp <= now]:
-        _STATES.pop(k, None)
-    while len(_STATES) >= _STATE_CAP:
-        _STATES.pop(next(iter(_STATES)), None)
+def _state_id(state: str) -> str:
+    return hashlib.sha256(state.encode()).hexdigest()
 
 
-def new_state(provider: str) -> str:
-    now = time.monotonic()
-    _prune_states(now)
+def _aware(dt):
+    if dt is not None and dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
+async def new_state(db, provider: str, redirect: str, now: datetime | None = None) -> tuple[str, str]:
+    """Create a sign-in attempt. Returns (state, nonce)."""
+    now = now or datetime.now(timezone.utc)
     state = _secrets.token_urlsafe(32)
-    _STATES[state] = (provider, now + STATE_TTL_SECONDS)
-    return state
+    nonce = _secrets.token_urlsafe(16)
+    await db[STATE_COLLECTION].insert_one({
+        "_id": _state_id(state), "provider": provider, "nonce": nonce,
+        "redirect_uri": redirect, "created_at": now,
+        "expires_at": now + timedelta(seconds=STATE_TTL_SECONDS)})
+    return state, nonce
 
 
-def consume_state(state: str, provider: str) -> bool:
-    entry = _STATES.pop(state, None)
-    return bool(entry) and entry[0] == provider and entry[1] > time.monotonic()
+async def consume_state(db, state: str, provider: str, now: datetime | None = None) -> dict | None:
+    """Single use: returns the stored attempt (nonce, redirect_uri) or None."""
+    if not state:
+        return None
+    now = now or datetime.now(timezone.utc)
+    doc = await db[STATE_COLLECTION].find_one_and_delete({"_id": _state_id(state)})
+    if not doc or doc.get("provider") != provider:
+        return None
+    if _aware(doc.get("expires_at")) <= now:
+        return None
+    return doc

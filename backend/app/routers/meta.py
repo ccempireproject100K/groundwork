@@ -134,9 +134,11 @@ async def _federated_resolve(request: Request, provider: str, claims: dict):
         {"identities": {"$elemMatch": {"provider": provider, "sub": sub}}})
     if user is not None:
         return user
-    email = claims.get("email")
+    # Microsoft asserts no verified email: it links by (provider, sub) only
+    # and never contributes an email address, whatever the claims carry.
+    email = None if provider == "microsoft" else claims.get("email")
     # 2) link by VERIFIED email (never for apple — private relay)
-    if provider != "apple" and email and claims.get("email_verified"):
+    if provider not in ("apple", "microsoft") and email and claims.get("email_verified"):
         user = await db.users.find_one({"email": email})
         if user is not None:
             identities = list(user.get("identities") or [])
@@ -155,14 +157,15 @@ async def _federated_resolve(request: Request, provider: str, claims: dict):
     if provider == "apple":
         if not email:
             raise HTTPException(422, "Apple did not return an email address")
-    elif not email or not claims.get("email_verified"):
+    elif provider != "microsoft" and (not email or not claims.get("email_verified")):
         raise HTTPException(401, "provider did not return a verified email address")
     uid = uuid.uuid4().hex
-    doc = {"_id": uid, "handle": await _unique_handle(db, email),
+    doc = {"_id": uid, "handle": await _unique_handle(db, email or claims.get("name") or "member"),
            "password_hash": None, "role": "member", "tier": "free",
-           "phone": None, "email": email,
-           "identities": [{"provider": provider, "sub": sub}],
+           "phone": None, "identities": [{"provider": provider, "sub": sub}],
            "auth_providers": [provider]}
+    if email:
+        doc["email"] = email
     await db.users.insert_one(doc)
     return doc
 
@@ -184,9 +187,12 @@ async def auth_providers(request: Request):
 async def federated_start(provider: str, request: Request):
     _require_provider(request, provider)
     settings = request.app.state.settings
-    state = federated.new_state(provider)
-    url = federated.build_authorize_url(settings, provider, state,
-                                        str(request.base_url))
+    try:
+        redirect = federated.redirect_uri(settings, provider, str(request.base_url))
+    except federated.RedirectNotConfigured:
+        raise HTTPException(503, f"{provider} sign-in is not configured")
+    state, nonce = await federated.new_state(request.app.state.db, provider, redirect)
+    url = federated.build_authorize_url(settings, provider, state, redirect, nonce)
     resp = RedirectResponse(url, status_code=307)
     # Bind the sign-in attempt to this browser: the callback must present it.
     resp.set_cookie(_STATE_COOKIE, state, max_age=federated.STATE_TTL_SECONDS,
@@ -200,14 +206,17 @@ async def federated_callback(provider: str, request: Request,
                              code: str = "", state: str = ""):
     _require_provider(request, provider)
     bound = request.cookies.get(_STATE_COOKIE, "")
-    if not federated.consume_state(state, provider) or not _secrets.compare_digest(bound, state):
+    attempt = await federated.consume_state(request.app.state.db, state, provider)
+    if attempt is None or not _secrets.compare_digest(bound, state):
         raise HTTPException(400, "invalid or expired sign-in state")
     settings = request.app.state.settings
     try:
         token = await run_in_threadpool(federated.exchange_code, settings, provider, code,
-                                        str(request.base_url))
+                                        attempt["redirect_uri"])
         claims = await run_in_threadpool(federated.verify_provider_token, settings, provider, token)
     except Exception:
+        raise HTTPException(401, "provider sign-in could not be verified")
+    if not federated.nonce_matches(provider, attempt.get("nonce"), claims):
         raise HTTPException(401, "provider sign-in could not be verified")
     user = await _federated_resolve(request, provider, claims)
     session = _federated_session(request, user)
