@@ -4,10 +4,10 @@ from fastapi import FastAPI
 
 from .config import Settings, load_settings
 from .routers import (community, family, journey, learning, matching, meta, platform, reentry, safety,
-                      support, venue, wellbeing, work)
+                      support, venue, welcome, wellbeing, work)
 
 ROUTERS = (meta, safety, reentry, work, support, community, journey, wellbeing, learning, matching, venue,
-           family, platform)
+           family, platform, welcome)
 
 
 def create_app(settings: Settings | None = None, db=None) -> FastAPI:

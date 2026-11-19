@@ -12,19 +12,19 @@ UPGRADED = {"journey_portfolio", "ai_matching", "community_feed", "filters", "vi
 
 
 def test_exactly_45_features_in_spec_order():
-    assert len(registry.FEATURES) == 49
-    assert [f.n for f in registry.FEATURES] == list(range(1, 50))
-    assert len(registry.BY_ID) == 49  # ids unique
+    assert len(registry.FEATURES) == 51
+    assert [f.n for f in registry.FEATURES] == list(range(1, 52))
+    assert len(registry.BY_ID) == 51  # ids unique
 
 
 def test_side_counts_match_spec():
-    assert Counter(f.side for f in registry.FEATURES) == registry.SIDES == {"reentry": 18, "recovery": 10, "own": 21}
+    assert Counter(f.side for f in registry.FEATURES) == registry.SIDES == {"reentry": 18, "recovery": 10, "own": 23}
 
 
 def test_courses_listed_twice_one_module():
     mods = [f.to_dict()["module"] for f in registry.FEATURES]
     assert mods.count("courses") == 2
-    assert len(set(mods)) == 48
+    assert len(set(mods)) == 50
 
 
 def test_phase3_addons_registered_working():

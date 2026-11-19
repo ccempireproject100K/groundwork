@@ -16,7 +16,7 @@ def test_app_name_from_one_setting(db):
 
 def test_features_endpoint(client):
     body = client.get("/api/features").json()
-    assert body["count"] == 49 and len(body["features"]) == 49
+    assert body["count"] == 51 and len(body["features"]) == 51
 
 
 def test_every_feature_has_a_stub_route(client):

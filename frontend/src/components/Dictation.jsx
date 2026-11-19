@@ -14,12 +14,17 @@ export function dictationSupported() {
   return Boolean(Recognition);
 }
 
-// Recognition language follows the page's selected language (this app's 21).
+// Recognition language follows the page's selected language. Superset kept from
+// Groundwork-1.5 (the original 21) and GW-Yee-Lilmagic (extra translated locales).
 const LANG_TAGS = {
   en: "en-US", es: "es-ES", fr: "fr-FR", hi: "hi-IN", vi: "vi-VN", ar: "ar-SA",
   tl: "tl-PH", ht: "ht-HT", zh: "zh-CN", ko: "ko-KR", pt: "pt-BR", ru: "ru-RU",
   so: "so-SO", ur: "ur-PK", bn: "bn-BD", pa: "pa-IN", fa: "fa-IR", am: "am-ET",
   my: "my-MM", ne: "ne-NP", sw: "sw-KE",
+  id: "id-ID", de: "de-DE", ja: "ja-JP", tr: "tr-TR", mr: "mr-IN",
+  te: "te-IN", ta: "ta-IN", it: "it-IT", gu: "gu-IN", th: "th-TH", pl: "pl-PL",
+  uk: "uk-UA", ms: "ms-MY", yo: "yo-NG", ha: "ha-NG", ig: "ig-NG", ro: "ro-RO",
+  nl: "nl-NL", km: "km-KH", zu: "zu-ZA", el: "el-GR", he: "he-IL",
 };
 
 export function recognitionLang(pageLang) {

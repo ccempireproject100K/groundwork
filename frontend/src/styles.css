@@ -887,3 +887,69 @@ main .card-list li, main .quiz-options li, main .venue-stops li, main .card-grid
     transition-duration: .01ms !important;
   }
 }
+
+/* ---- Welcome banner: slim dark ticker, yellow lettering, site parade ----
+   Settled design (owner welcome-banner spec, 2026-11-02): dark background,
+   yellow lettering, thin but readable, gently/slowly scrolling. The parade
+   of family sites runs underneath as floats. Logical properties only. */
+.welcome-banner {
+  background: linear-gradient(180deg, #171106, #100c05);
+  color: #ffd94d;
+  border-block-end: 1px solid rgba(255, 217, 77, .35);
+  padding-block: .3rem .45rem;
+  overflow: hidden;
+}
+.welcome-ticker-row { display: flex; align-items: center; gap: .5rem; }
+.welcome-ticker { flex: 1; overflow: hidden; min-inline-size: 0; }
+.welcome-track {
+  display: flex; inline-size: max-content;
+  animation: welcome-scroll 55s linear infinite;
+}
+.welcome-track.is-still { animation: none; inline-size: auto; flex-wrap: wrap; }
+.welcome-messages {
+  display: flex; gap: 3rem; margin: 0; padding-inline-end: 3rem;
+  list-style: none; white-space: nowrap;
+  font-size: .92rem; font-weight: 600; letter-spacing: .02em;
+}
+.welcome-track.is-still .welcome-messages { flex-wrap: wrap; white-space: normal; row-gap: .15rem; }
+.welcome-free-tag {
+  margin-inline-start: .5rem; padding: .05rem .45rem; vertical-align: .08em;
+  border: 1px solid rgba(255, 217, 77, .6); border-radius: 999px;
+  font-size: .7rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap;
+}
+@keyframes welcome-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.welcome-pause {
+  flex: none; min-height: 30px; min-inline-size: 38px; padding-block: .15rem; padding-inline: .5rem;
+  color: #ffd94d; background: rgba(255, 217, 77, .08);
+  border: 1px solid rgba(255, 217, 77, .45); border-radius: 999px; font-size: .8rem;
+}
+.welcome-pause:hover { background: rgba(255, 217, 77, .18); box-shadow: none; }
+.welcome-parade { margin-block-start: .35rem; }
+.parade-floats {
+  display: flex; flex-wrap: wrap; gap: .4rem 1.1rem; margin: 0; padding: 0; list-style: none;
+}
+.parade-float {
+  display: flex; flex-direction: column; align-items: center; gap: .05rem;
+  color: #f2cd8a; font-size: .72rem; font-weight: 600; text-align: center;
+  animation: parade-bob 4.6s ease-in-out infinite alternate;
+}
+.parade-badge { display: block; }
+.parade-wheels { display: flex; gap: 14px; }
+.parade-wheels i { inline-size: 5px; block-size: 5px; border-radius: 50%; background: rgba(242, 205, 138, .75); }
+@keyframes parade-bob {
+  from { transform: translateY(0); }
+  to { transform: translateY(-3px); }
+}
+@media (max-width: 640px) {
+  .welcome-messages { font-size: .84rem; gap: 2rem; padding-inline-end: 2rem; }
+  .parade-floats { gap: .3rem .7rem; }
+  .parade-name { font-size: .66rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .welcome-track { animation: none; inline-size: auto; flex-wrap: wrap; }
+  .welcome-messages { white-space: normal; flex-wrap: wrap; }
+  .parade-float { animation: none; }
+}

@@ -21,6 +21,11 @@ GW_JWT_SECRET=$(python3 -c 'import secrets;print(secrets.token_hex(32))') .venv/
 cd ../frontend && npm install && npx vitest run && npm run dev
 ```
 
+## Optional features that are off by default
+- **AI resume assist** (talk it through, or paste an old resume; the draft is always reviewed by the member): refuses with a plain 503 until the env var `GW_META_MODEL_API_KEY` is set (optional `GW_META_MODEL_API_URL`). No paid API call is ever made without it; with it, every call is metered per member per month by `backend/app/ai_bank.py`. The owner has not approved this spending, so leave the key unset. Building a resume by hand never depends on it.
+- **Federated sign-in** (Google, Facebook, Microsoft, LinkedIn): each provider is invisible until its `GW_<PROVIDER>_CLIENT_ID` and secret are set. Apple is ready but gated.
+- **Welcome banner**: members choose a display name, anonymous, or opt out; nothing is announced until they choose.
+
 ## Docs
 - [AGENTS.md](AGENTS.md): rules for agents, including the safety defaults
 - [docs/features.md](docs/features.md): the 45 features, with tier, build type and OSS candidates

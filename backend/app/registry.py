@@ -1,7 +1,7 @@
-"""The 49-feature registry: the single source of truth for what the app is.
+"""The 51-feature registry: the single source of truth for what the app is.
 
 Faithful to Brann's spec (2026-10-28): 18 reentry + 10 recovery + 17 own
-additions = 45 entries, plus 4 Phase 3 add-ons (#46-49). "courses" appears twice in the spec (reentry #14 and
+additions = 45 entries, plus 4 Phase 3 add-ons (#46-49), plus 2 added from GW-Yee-Lilmagic (#50-51). "courses" appears twice in the spec (reentry #14 and
 own-addition #45); both entries stay in the registry and point at ONE module
 (`module="courses"`). See docs/features.md for the overlap note.
 
@@ -109,15 +109,20 @@ FEATURES: tuple[Feature, ...] = (
       notes="Never provides housing or partners with providers. Calculator inputs are user-entered."),
     F(49, "music_player", "Music player (off inside academy/course modules; sample tracks only)", "own", "platform", "unassigned",
       notes="No third-party streaming accounts. Placeholder/sample tracks clearly marked."),
+    # ---- ADDED FROM GW-Yee-Lilmagic (owner order 2026-11-19); tiers left unassigned for Brann ----
+    F(50, "welcome_banner", "New-member welcome banner (consent-gated, privacy-first, real events only)", "own", "platform", "unassigned",
+      notes="Free trigger = registration with a banner choice; paid trigger exists but stays uncalled until a real payment flow exists. app/welcome.py."),
+    F(51, "resume_ai_assist", "AI resume assist (talk it through or paste an old resume; writes a draft you review)", "own", "work", "unassigned",
+      notes="OFF by default: refuses with 503 until GW_META_MODEL_API_KEY is set. One metered call per draft via app/ai_bank.py; anti-fabrication prompt rules in app/providers.py. Owner has not approved spending."),
 )
 
-_WORKING = {"carpool_board", "community_groups_directory", "housing_savings", "music_player", "ai_matching", "token_rewards", "merch_rewards", "progress_share_card", "day_one_archive", "events", "program_groups", "virtual_meetings", "video_posts", "photo_posts", "voice_notes", "anonymous_qa", "mentorship", "geolocation", "needs_a_ride", "accountability_partners", "resume_builder", "interview_coach", "micro_gigs", "courses", "courses_life_skills", "crisis_button", "relapse_protocol", "safe_call_contacts", "data_wipe", "mood_checkins", "filters", "locks", "read_aloud", "multi_language", "resource_directory", "twelve_step_locator", "counseling_referrals", "community_feed", "anonymous_posting", "peer_messaging", "milestone_celebrations", "reentry_checklist", "court_calendar", "job_board", "application_tracker", "document_vault", "journey_portfolio", "family_mode", "virtual_venue"}
+_WORKING = {"welcome_banner", "resume_ai_assist", "carpool_board", "community_groups_directory", "housing_savings", "music_player", "ai_matching", "token_rewards", "merch_rewards", "progress_share_card", "day_one_archive", "events", "program_groups", "virtual_meetings", "video_posts", "photo_posts", "voice_notes", "anonymous_qa", "mentorship", "geolocation", "needs_a_ride", "accountability_partners", "resume_builder", "interview_coach", "micro_gigs", "courses", "courses_life_skills", "crisis_button", "relapse_protocol", "safe_call_contacts", "data_wipe", "mood_checkins", "filters", "locks", "read_aloud", "multi_language", "resource_directory", "twelve_step_locator", "counseling_referrals", "community_feed", "anonymous_posting", "peer_messaging", "milestone_celebrations", "reentry_checklist", "court_calendar", "job_board", "application_tracker", "document_vault", "journey_portfolio", "family_mode", "virtual_venue"}
 for _f in FEATURES:
     if _f.id in _WORKING:
         object.__setattr__(_f, "status", "working")
 
 BY_ID = {f.id: f for f in FEATURES}
-SIDES = {"reentry": 18, "recovery": 10, "own": 21}
+SIDES = {"reentry": 18, "recovery": 10, "own": 23}
 GROUPS = sorted({f.group for f in FEATURES})
 MILESTONE_DAYS = (30, 60, 90, 180, 365)
 

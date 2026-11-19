@@ -15,6 +15,6 @@ export const register = (handle, password, tier = "free", welcomeChoice = null, 
 export const login = (handle, password) => api("/api/auth/login", { method: "POST", body: { handle, password } });
 export const getAuthProviders = () => api("/api/auth/providers");
 export const getWelcomeFeed = () => api("/api/welcome/feed");
-export const getWelcomePreference = () => api("/api/welcome/preference");
+export const getWelcomePreference = () => api("/api/welcome/me");
 export const setWelcomePreference = (choice, displayName = null) =>
-  api("/api/welcome/preference", { method: "PATCH", body: { choice, display_name: displayName } });
+  api("/api/welcome/choice", { method: "PUT", body: { choice, display_name: displayName } });

@@ -32,7 +32,7 @@ export function WelcomeChoiceFields({ choice, setChoice, name, setName }) {
         {t("welcome.choiceAnonymous")}
       </label>
       <label>
-        <input type="radio" name="welcome-choice" value="opt_out" checked={choice === "opt_out"} onChange={() => setChoice("opt_out")} />{" "}
+        <input type="radio" name="welcome-choice" value="optout" checked={choice === "optout"} onChange={() => setChoice("optout")} />{" "}
         {t("welcome.choiceOptOut")}
       </label>
     </fieldset>
@@ -84,8 +84,8 @@ export default function SettingsPage() {
     if (!me) return;
     getWelcomePreference()
       .then((p) => {
-        setSavedChoice(p.choice || "");
-        setSavedName(p.display_name || "");
+        setSavedChoice(p.welcome_choice || "");
+        setSavedName(p.welcome_display_name || "");
       })
       .catch(() => {});
   }, [me]);

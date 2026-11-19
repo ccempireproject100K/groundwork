@@ -1,4 +1,4 @@
-# Features: the 49
+# Features: the 51
 
 Source of truth: `backend/app/registry.py` (tests pin count, sides, tiers, build type). This table is generated from it plus the OSS candidates below; regenerate it when the registry changes.
 
@@ -63,3 +63,5 @@ Source of truth: `backend/app/registry.py` (tests pin count, sides, tiers, build
 | 47 | `community_groups_directory` | Community groups directory (recovery, reentry, faith; sample data) | own | unassigned | stock | working | Separate from twelve_step_locator; SAMPLE seed data, no real listings |
 | 48 | `housing_savings` | Housing savings (goals + readiness plan; 211 pointers only) | own | unassigned | stock | working | User-entered figures only; never provides housing |
 | 49 | `music_player` | Music player (off in academy; sample tracks only) | own | unassigned | stock | working | No streaming accounts; auto-disabled on /learn routes |
+| 50 | `welcome_banner` | New-member welcome banner (consent-gated, privacy-first, real events only) | own | unassigned | stock | working | app/welcome.py; free trigger = registration with a banner choice; paid trigger stays uncalled until a real payment flow exists |
+| 51 | `resume_ai_assist` | AI resume assist (talk it through or paste an old resume; writes a draft you review) | own | unassigned | stock | working | OFF by default (503 until `GW_META_MODEL_API_KEY` is set); metered per member per month by app/ai_bank.py |

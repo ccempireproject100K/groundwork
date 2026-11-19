@@ -93,6 +93,8 @@ describe("dictation on the public account form", () => {
     expect(recognitionLang("ru")).toBe("ru-RU");
     expect(recognitionLang("my")).toBe("my-MM");
     expect(recognitionLang("pt-BR")).toBe("pt-BR");
+    expect(recognitionLang("de")).toBe("de-DE");
+    expect(recognitionLang("ja")).toBe("ja-JP");
   });
 
   it("pins a recognition tag for every one of the app's 21 page languages", async () => {

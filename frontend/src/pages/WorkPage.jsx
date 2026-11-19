@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "../api";
 import ReadAloud from "../components/ReadAloud";
+import ResumeAssist, { ResumeFileButtons } from "../components/ResumeAssist";
 import { INTERVIEW_QUESTIONS, scoreInterview } from "../data/phase3";
 export default function WorkPage() {
   const { t } = useTranslation();
@@ -44,10 +45,11 @@ export default function WorkPage() {
       <div data-testid="tracker-section"><h2>{t("gap.trackerTitle")}</h2>
         {apps.length === 0 ? <p>{t("gap.trackerEmpty")}</p> : <ul>{apps.map((a) => <li key={a._id}>{a.job_id} — {t("gap.statusLabel")}: {a.status}</li>)}</ul>}</div>
       <div data-testid="resume-section"><h2>{t("phase3.resumeTitle")}</h2><p>{t("phase3.resumeHelp")}</p><ReadAloud text={t("phase3.resumeHelp")} />
+        <ResumeAssist onChanged={loadResumes} />
         <label>{t("phase3.fullName")} <input value={name} onChange={(e) => setName(e.target.value)} /></label>
         <button type="button" onClick={build}>{t("phase3.buildResume")}</button>
         {resume && <p role="status">{resume.full_name}</p>}
-        {resumes.length > 0 && <><h3>{t("gap.resumesMine")}</h3><ul>{resumes.map((r) => <li key={r._id}>{r.full_name} <button type="button" onClick={() => delResume(r._id)}>{t("gap.remove")}</button></li>)}</ul></>}</div>
+        {resumes.length > 0 && <><h3>{t("gap.resumesMine")}</h3><ul>{resumes.map((r) => <li key={r._id}>{r.full_name}{r.ai_draft && <> <span className="badge">{t("resumeAi.aiDraftBadge")}</span></>} <ResumeFileButtons rid={r._id} onError={setMsg} /> <button type="button" onClick={() => delResume(r._id)}>{t("gap.remove")}</button></li>)}</ul></>}</div>
       <div data-testid="interview-section"><h2>{t("phase3.interviewTitle")}</h2><p>{t("phase3.interviewHelp")}</p><ReadAloud text={t("phase3.interviewHelp")} />
         <label>Q <select value={qid} onChange={(e) => setQid(e.target.value)}>{INTERVIEW_QUESTIONS.map((q) => <option key={q.id} value={q.id}>{q.prompt}</option>)}</select></label>
         <label>{t("phase3.answer")} <textarea value={answer} onChange={(e) => setAnswer(e.target.value)} /></label>

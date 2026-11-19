@@ -33,4 +33,4 @@
 9. Locks and filters can never block lock-exempt features (crisis, relapse, safe-call contacts, wipe).
 
 ## Project skills
-`.grok/skills/` holds the project skills: reentry-checklist, recovery-moderation, milestone-merch, sober-venue-web, course-generation, journey-portfolio, ai-matcher, mood-filters and venue-threejs.
+`.grok/skills/` holds the project skills: reentry-checklist, recovery-moderation, milestone-merch, sober-venue-web, course-generation, journey-portfolio, ai-matcher, brothers-keeper (spec only, no code), mood-filters and venue-threejs.

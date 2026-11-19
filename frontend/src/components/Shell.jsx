@@ -4,6 +4,7 @@ import { APP_NAME } from "../brand";
 import { AREAS } from "../areas";
 import CrisisButton from "./CrisisButton";
 import LanguageSwitcher from "./LanguageSwitcher";
+import WelcomeBanner from "./WelcomeBanner";
 
 export default function Shell() {
   const { t } = useTranslation();
@@ -16,6 +17,7 @@ export default function Shell() {
         </div>
         <CrisisButton />
       </header>
+      <WelcomeBanner />
       <nav className="shell-nav" aria-label="main">
         <NavLink to="/">{t("nav.home")}</NavLink>
         {AREAS.map((a) => <NavLink key={a.path} to={`/${a.path}`}>{t(`nav.${a.key}`)}</NavLink>)}

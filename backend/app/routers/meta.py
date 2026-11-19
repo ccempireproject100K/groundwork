@@ -2,7 +2,7 @@
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
-from .. import federated, registry, safety, security, tiers
+from .. import federated, registry, safety, security, tiers, welcome
 from ..deps import get_current_user
 
 router = APIRouter(prefix="/api", tags=["meta"])
@@ -13,6 +13,10 @@ class RegisterIn(BaseModel):
     role: str = "member"
     phone: str | None = None
     tier: str = "free"
+    # Welcome banner choice: onboarding's FIRST question. None = not chosen
+    # yet, which defaults to NO public announcement. See app/welcome.py.
+    welcome_choice: str | None = None
+    welcome_display_name: str | None = Field(default=None, max_length=80)
 
 class LoginIn(BaseModel):
     handle: str
@@ -42,12 +46,24 @@ async def register(body: RegisterIn, request: Request):
         raise HTTPException(422, "invalid role")
     if body.tier not in ("free", "paid"):
         raise HTTPException(422, "invalid tier")
+    if body.welcome_choice is not None and body.welcome_choice not in welcome.CHOICES:
+        raise HTTPException(422, "invalid welcome choice")
     db = request.app.state.db
     if await db.users.find_one({"handle": body.handle}):
         raise HTTPException(409, "handle taken")
     uid = uuid.uuid4().hex
-    doc = {"_id": uid, "handle": body.handle, "password_hash": security.hash_password(body.password), "role": body.role, "tier": body.tier, "phone": body.phone}
+    doc = {"_id": uid, "handle": body.handle, "password_hash": security.hash_password(body.password), "role": body.role, "tier": body.tier, "phone": body.phone,
+           "welcome_choice": body.welcome_choice,
+           "welcome_display_name": welcome.sanitize_display_name(body.welcome_display_name)}
     await db.users.insert_one(doc)
+    # FREE welcome trigger (owner's final rules, 2026-11-03): account creation
+    # is the onboarding and the banner choice arrives with registration, so a
+    # registration carrying a choice, while uncharged, earns the FREE-tagged
+    # announcement. Selecting a paid tier is NOT a payment: the paid
+    # announcement can only come from welcome.note_payment_collected() once a
+    # real payment flow calls it (none exists). Never on login or fabricated.
+    await welcome.note_onboarding_completed(db, uid, body.welcome_choice,
+                                            body.welcome_display_name, body.handle)
     token = security.make_token(request.app.state.settings.jwt_secret, uid, body.role, request.app.state.settings.token_ttl_minutes)
     return {"token": token, "user": safety.public_member(doc)}
 
