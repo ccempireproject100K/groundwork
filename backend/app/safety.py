@@ -18,7 +18,7 @@ def crisis_payload(app_name: str) -> dict:
 PRIVATE_MEMBER_FIELDS = {"phone", "email", "password_hash", "identities", "google_sub", "vault_key", "legal_name", "address", "dob", "case_number", "welcome_display_name",
                          # Billing internals (app/billing.py): Stripe linkage and
                          # plan bookkeeping never appear in a member payload.
-                         "stripe_customer_id", "stripe_subscription_id", "billing_tier", "plan_selected", "paid_at"}
+                         "stripe_customer_id", "stripe_subscription_id", "billing_tier", "plan_selected", "paid_at", "billing_status"}
 
 
 def public_member(user: dict) -> dict:

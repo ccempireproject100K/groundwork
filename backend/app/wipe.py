@@ -59,6 +59,7 @@ USER_COLLECTIONS = {
     "ride_ping_sessions": "user_id",
     "savings_goals": "user_id",
     "housing_plan": "user_id",
+    "stripe_events": "user_id",
 }
 
 

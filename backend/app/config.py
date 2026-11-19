@@ -42,6 +42,14 @@ class Settings:
     apple_client_id: str = ""
     apple_client_secret: str = ""
     apple_redirect_uri: str = ""
+    # Billing (app/billing.py). Both Stripe values empty -> the billing
+    # endpoints answer 503 and nothing is ever granted. public_url is the
+    # site's own origin: checkout return URLs are built from it, never from
+    # anything the client sends.
+    stripe_secret_key: str = ""
+    stripe_webhook_secret: str = ""
+    public_url: str = ""
+
 
 
 def load_settings() -> Settings:
@@ -70,4 +78,7 @@ def load_settings() -> Settings:
         apple_client_id=os.environ.get("GW_APPLE_CLIENT_ID", ""),
         apple_client_secret=os.environ.get("GW_APPLE_CLIENT_SECRET", ""),
         apple_redirect_uri=os.environ.get("GW_APPLE_REDIRECT_URI", ""),
+        stripe_secret_key=os.environ.get("GW_STRIPE_SECRET_KEY", "").strip(),
+        stripe_webhook_secret=os.environ.get("GW_STRIPE_WEBHOOK_SECRET", "").strip(),
+        public_url=os.environ.get("GW_PUBLIC_URL", "").strip(),
     )

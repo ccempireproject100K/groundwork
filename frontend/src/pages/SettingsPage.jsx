@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { api, getAuthProviders, getToken, getWelcomePreference, login, register, setToken, setWelcomePreference } from "../api";
+import { api, getAuthProviders, getBillingStatus, getToken, getWelcomePreference, login, register, setToken, setWelcomePreference, startCheckout } from "../api";
 import ReadAloud from "../components/ReadAloud";
 import MusicPlayer from "../components/MusicPlayer";
 import { DictateButton, GuidedFill } from "../components/Dictation";
@@ -52,6 +52,10 @@ export default function SettingsPage() {
   const [welcomeName, setWelcomeName] = useState("");
   const [savedChoice, setSavedChoice] = useState("");
   const [savedName, setSavedName] = useState("");
+  // Paid-plan billing: null until the status call answers; the Upgrade
+  // button shows only when the server reports billing as configured.
+  const [billing, setBilling] = useState(null);
+  const [checkoutBusy, setCheckoutBusy] = useState(false);
 
   // Read-only account summary: the backend has no profile-update
   // endpoint, so nothing here is editable.
@@ -90,9 +94,37 @@ export default function SettingsPage() {
       .catch(() => {});
   }, [me]);
 
+  useEffect(() => {
+    if (!me) {
+      setBilling(null);
+      return;
+    }
+    getBillingStatus().then(setBilling).catch(() => setBilling(null));
+  }, [me]);
+
+  useEffect(() => {
+    // Stripe sends the browser back here with ?checkout=success|cancelled.
+    const result = new URLSearchParams(window.location.search).get("checkout");
+    if (result === "success") setMsg(t("settings.checkoutSuccess"));
+    else if (result === "cancelled") setMsg(t("settings.checkoutCancelled"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function doUpgrade() {
+    setCheckoutBusy(true);
+    setMsg(t("settings.upgradeStarting"));
+    try {
+      const r = await startCheckout();
+      window.location.assign(r.url);
+    } catch (e) {
+      setMsg(e.status === 503 || e.status === 502 ? t("settings.upgradeUnavailable") : e.message);
+      setCheckoutBusy(false);
+    }
+  }
+
   async function doRegister() {
     try {
-      const r = await register(handle, pw, "free", welcomeChoice || null, welcomeChoice === "named" ? welcomeName : null);
+      const r = await register(handle, pw, welcomeChoice || null, welcomeChoice === "named" ? welcomeName : null);
       setToken(r.token);
       setMsg(t("settings.loggedIn"));
       if (r.user) setMe(r.user);
@@ -184,6 +216,13 @@ export default function SettingsPage() {
             <p className="muted">
               {t("settings.planLabel")}: {me.tier}
             </p>
+          )}
+          {billing && billing.configured && billing.plan && me.tier !== billing.plan.tier && (
+            <div className="field-row">
+              <button type="button" className="btn" onClick={doUpgrade} disabled={checkoutBusy}>
+                {t("settings.upgrade")} ({t("settings.upgradePrice", { price: `$${(billing.plan.price_cents / 100).toFixed(2)}` })})
+              </button>
+            </div>
           )}
           <button type="button" className="btn-ghost" onClick={doLogout}>
             {t("settings.logout")}

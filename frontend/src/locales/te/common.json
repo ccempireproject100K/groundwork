@@ -253,7 +253,13 @@
     "planLabel": "Plan",
     "roleLabel": "Role",
     "signedInAs": "Signed in as",
-    "continueWith": "Continue with"
+    "continueWith": "Continue with",
+    "upgrade": "Upgrade to the paid plan",
+    "upgradePrice": "{{price}} per month",
+    "upgradeStarting": "Opening secure checkout...",
+    "upgradeUnavailable": "Upgrading is not available right now.",
+    "checkoutSuccess": "Thank you. Your plan updates as soon as the payment is confirmed.",
+    "checkoutCancelled": "Checkout was cancelled. You have not been charged."
   },
   "readAloud": {
     "button": "బిగ్గరగా చదవండి",

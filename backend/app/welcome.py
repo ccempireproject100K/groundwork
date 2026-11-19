@@ -200,11 +200,8 @@ async def note_payment_collected(db, user_id: str) -> dict | None:
     announcement. Deduped: at most one paid announcement per member, ever
     (calling this twice changes nothing).
 
-    GAP / UNCALLED: no payment provider is chosen or built in this
-    codebase and no real payment-collected event exists (the paid tier is only a
-    plan-registry entry in tiers.py). This hook must stay
-    uncalled until a real payment flow can invoke it at the moment a
-    first payment is actually collected. Never call it speculatively.
+    Called by the billing webhook (app/billing.py) once a verified Stripe
+    checkout confirms the paid subscription. Never call it speculatively.
     """
     user = await db.users.find_one({"_id": user_id})
     if not user:

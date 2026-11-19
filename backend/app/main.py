@@ -3,11 +3,11 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from .config import Settings, load_settings
-from .routers import (community, family, journey, learning, matching, meta, platform, reentry, safety,
+from .routers import (billing, community, family, journey, learning, matching, meta, platform, reentry, safety,
                       support, venue, welcome, wellbeing, work)
 
 ROUTERS = (meta, safety, reentry, work, support, community, journey, wellbeing, learning, matching, venue,
-           family, platform, welcome)
+           family, platform, welcome, billing)
 
 
 async def ensure_indexes(db) -> None:
