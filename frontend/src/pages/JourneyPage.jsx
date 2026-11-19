@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 import { api } from "../api";
 import ReadAloud from "../components/ReadAloud";
 import { MILESTONE_DAYS } from "../lib/mood";
-import TranslationCheck from "../components/TranslationCheck";
 export default function JourneyPage() {
   const { t } = useTranslation();
   const [start, setStart] = useState("2024-01-01");
@@ -26,6 +25,12 @@ export default function JourneyPage() {
   const [calc, setCalc] = useState(null);
   const [plan, setPlan] = useState([]);
   const [msg, setMsg] = useState("");
+  const [card, setCard] = useState(null);
+  const [archive, setArchive] = useState([]);
+  const [archiveBody, setArchiveBody] = useState("");
+  const [archiveDay, setArchiveDay] = useState(30);
+  const [claimed, setClaimed] = useState({});
+  const [redeemPts, setRedeemPts] = useState("");
   async function loadPortfolio() {
     try { setItems((await api("/api/journey/journey_portfolio/items")).items || []); } catch {}
     try { setSuggest((await api("/api/journey/journey_portfolio/suggestions")).suggestions || []); } catch {}
@@ -36,7 +41,24 @@ export default function JourneyPage() {
     api("/api/journey/merch_rewards").then((d) => setMerch(d.items || [])).catch(() => {});
     api("/api/journey/housing_savings/goals").then((d) => setGoals(d.goals || [])).catch(() => {});
     api("/api/journey/housing_savings/plan").then((d) => setPlan(d.steps || [])).catch(() => {});
+    loadArchive();
+    api("/api/journey/milestone_celebrations").then((d) => { const ms = d.milestones || []; if (ms.length) setResult(ms[ms.length - 1]); }).catch(() => {});
+    api("/api/journey/progress_share_card").then((d) => { const cs = d.cards || []; if (cs.length) setCard(cs[cs.length - 1]); }).catch(() => {});
   }, []);
+  async function loadArchive() { try { setArchive((await api("/api/journey/day_one_archive")).archive || []); } catch {} }
+  async function makeCard() { try { setCard(await api("/api/journey/progress_share_card", { method: "POST" })); } catch (e) { setMsg(e.message); } }
+  async function sealNote() {
+    if (!archiveBody.trim()) return;
+    try { await api("/api/journey/day_one_archive", { method: "POST", body: { body: archiveBody, unlock_day: Number(archiveDay) } }); setArchiveBody(""); loadArchive(); }
+    catch (e) { setMsg(e.message); }
+  }
+  async function claimMerch(m) { try { await api("/api/journey/merch_rewards/claim", { method: "POST", body: { item_id: m.id } }); setClaimed((x) => ({ ...x, [m.id]: true })); } catch (e) { setMsg(e.message); } }
+  async function redeem() {
+    const pts = Number(redeemPts || 0);
+    if (!pts) return;
+    try { const r = await api("/api/journey/token_rewards/redeem", { method: "POST", body: { reason: "redeem", points: pts } }); setBalance(r.balance); setRedeemPts(""); }
+    catch (e) { setMsg(e.message); }
+  }
   async function save() { try { setResult(await api("/api/journey/milestone_celebrations", { method: "POST", body: { kind: "sobriety", start_date: start } })); } catch {} }
   async function earn() { try { const r = await api("/api/journey/token_rewards/earn", { method: "POST", body: { reason: "checkin", points: 10 } }); setBalance(r.balance); } catch (e) { setMsg(e.message); } }
   async function addGoal() {
@@ -47,6 +69,13 @@ export default function JourneyPage() {
     try { setCalc(await api("/api/journey/housing_savings/calculator", { method: "POST", body: { target_cents: Math.round(Number(target || 0) * 100), saved_cents: 0, monthly_cents: Math.round(Number(monthly || 1) * 100) } })); }
     catch { const tc = Number(target || 0), mc = Number(monthly || 1); setCalc({ months: mc > 0 ? Math.ceil(tc / mc) : 0 }); }
   }
+  async function updateGoal(g) {
+    const el = document.getElementById(`saved-${g._id}`);
+    const dollars = Number(el?.value || 0);
+    try { const d = await api(`/api/journey/housing_savings/goals/${g._id}`, { method: "PATCH", body: { saved_cents: Math.round(dollars * 100) } }); setGoals((x) => x.map((y) => (y._id === g._id ? d : y))); }
+    catch (e) { setMsg(e.message); }
+  }
+  async function deleteGoal(g) { try { await api(`/api/journey/housing_savings/goals/${g._id}`, { method: "DELETE" }); setGoals((x) => x.filter((y) => y._id !== g._id)); } catch (e) { setMsg(e.message); } }
   async function checkStep(id, done) { try { await api("/api/journey/housing_savings/plan/check", { method: "POST", body: { step_id: id, done: !done } }); setPlan((p) => p.map((s) => s.id === id ? { ...s, done: !done } : s)); } catch {} }
   async function addItem() {
     if (!title.trim()) return;
@@ -121,13 +150,22 @@ export default function JourneyPage() {
         <button type="button" onClick={() => { setSharing(null); setShareUrl(""); }}>{t("phase3.cancel")}</button>
       </div>)}
       </div>
-      <div data-testid="tokens-section"><h2>{t("phase3.tokensTitle")}</h2><p>{t("phase3.tokensHelp")}</p><TranslationCheck keys="phase3.tokensHelp" /><ReadAloud text={t("phase3.tokensHelp")} />
-        <p>{t("phase3.balance")}: {balance}</p><button type="button" onClick={earn}>{t("phase3.earn")}</button></div>
+      <div data-testid="tokens-section"><h2>{t("phase3.tokensTitle")}</h2><p>{t("phase3.tokensHelp")}</p><ReadAloud text={t("phase3.tokensHelp")} />
+        <p>{t("phase3.balance")}: {balance}</p><button type="button" onClick={earn}>{t("phase3.earn")}</button>
+        <label>{t("gap.redeemPoints")} <input value={redeemPts} onChange={(e) => setRedeemPts(e.target.value)} inputMode="numeric" /></label>
+        <button type="button" onClick={redeem}>{t("gap.redeem")}</button></div>
       <div data-testid="merch-section"><h2>{t("phase3.merchTitle")}</h2><p>{t("phase3.merchHelp")}</p><ReadAloud text={t("phase3.merchHelp")} />
-        <ul>{merch.map((m) => <li key={m.id}>{m.name} — {m.code}</li>)}</ul></div>
-      <div data-testid="share-section"><h2>{t("phase3.shareTitle")}</h2><p>{t("phase3.shareHelp")}</p><ReadAloud text={t("phase3.shareHelp")} /></div>
-      <div data-testid="archive-section"><h2>{t("phase3.archiveTitle")}</h2><p>{t("phase3.archiveHelp")}</p><ReadAloud text={t("phase3.archiveHelp")} /></div>
-      <div data-testid="housing-section"><h2>{t("phase3.housingTitle")}</h2><p>{t("phase3.housingHelp")}</p><TranslationCheck keys="phase3.housingHelp" /><ReadAloud text={t("phase3.housingHelp")} />
+        <ul>{merch.map((m) => <li key={m.id}>{m.name} — {m.code}{claimed[m.id] ? ` · ${t("gap.claimed")}` : m.eligible ? <> <button type="button" onClick={() => claimMerch(m)}>{t("phase3.claim")}</button></> : ""}</li>)}</ul></div>
+      <div data-testid="share-section"><h2>{t("phase3.shareTitle")}</h2><p>{t("phase3.shareHelp")}</p><ReadAloud text={t("phase3.shareHelp")} />
+        <button type="button" onClick={makeCard}>{t("phase3.makeCard")}</button>
+        {card && <div data-testid="share-card"><p>{t("gap.cardStats", { done: card.stats?.checklist_done ?? 0, days: card.stats?.days ?? 0, tokens: card.stats?.tokens ?? 0 })}</p>
+          {card.svg && <div dangerouslySetInnerHTML={{ __html: card.svg }} />}</div>}</div>
+      <div data-testid="archive-section"><h2>{t("phase3.archiveTitle")}</h2><p>{t("phase3.archiveHelp")}</p><ReadAloud text={t("phase3.archiveHelp")} />
+        <label>{t("gap.archiveBody")} <textarea value={archiveBody} onChange={(e) => setArchiveBody(e.target.value)} /></label>
+        <label>{t("gap.archiveUnlockDay")} <select value={archiveDay} onChange={(e) => setArchiveDay(e.target.value)}>{MILESTONE_DAYS.map((d) => <option key={d} value={d}>{d}</option>)}</select></label>
+        <button type="button" onClick={sealNote}>{t("phase3.seal")}</button>
+        {archive.length === 0 ? <p>{t("gap.archiveEmpty")}</p> : <ul>{archive.map((a) => <li key={a.id}>{a.unlocked ? `${t("phase3.unlocked")} (day ${a.unlock_day}): ${a.body || ""}` : `${t("phase3.sealed")} — ${t("gap.archiveUnlockDay")} ${a.unlock_day}`}</li>)}</ul>}</div>
+      <div data-testid="housing-section"><h2>{t("phase3.housingTitle")}</h2><p>{t("phase3.housingHelp")}</p><ReadAloud text={t("phase3.housingHelp")} />
         <h3>{t("phase3.calcTitle")}</h3>
         <label>{t("phase3.goalTarget")} <input value={target} onChange={(e) => setTarget(e.target.value)} inputMode="decimal" /></label>
         <label>{t("phase3.calcMonthly")} <input value={monthly} onChange={(e) => setMonthly(e.target.value)} inputMode="decimal" /></label>
@@ -136,10 +174,13 @@ export default function JourneyPage() {
         <h3>{t("phase3.goalName")}</h3>
         <label>{t("phase3.goalName")} <input value={gname} onChange={(e) => setGname(e.target.value)} /></label>
         <button type="button" onClick={addGoal}>{t("phase3.addGoal")}</button>
-        <ul>{goals.map((g) => <li key={g._id}>{g.name}</li>)}</ul>
+        <ul>{goals.map((g) => <li key={g._id}>{g.name} — {Math.round((g.saved_cents || 0) / 100)} / {Math.round((g.target_cents || 0) / 100)}
+          <label>{t("gap.savedAmount")} <input id={`saved-${g._id}`} type="number" defaultValue={Math.round((g.saved_cents || 0) / 100)} /></label>
+          <button type="button" onClick={() => updateGoal(g)}>{t("gap.updateBtn")}</button>
+          <button type="button" onClick={() => deleteGoal(g)}>{t("gap.remove")}</button></li>)}</ul>
         <h3>{t("phase3.planTitle")}</h3>
         <ul>{plan.map((s) => <li key={s.id}><label><input type="checkbox" checked={!!s.done} onChange={() => checkStep(s.id, s.done)} /> {s.title}</label></li>)}</ul>
-        <p><a href="tel:211">{t("phase3.call211")}</a></p><TranslationCheck keys="phase3.call211" /></div>
+        <p><a href="tel:211">{t("phase3.call211")}</a></p></div>
       {msg && <p role="status">{msg}</p>}
     </section>
   );

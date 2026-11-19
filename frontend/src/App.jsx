@@ -14,6 +14,7 @@ import SettingsPage from "./pages/SettingsPage";
 import FamilyPage from "./pages/FamilyPage";
 import LearnPage from "./pages/LearnPage";
 import MatchPage from "./pages/MatchPage";
+import SharedPage from "./pages/SharedPage";
 import { AREAS } from "./areas";
 
 const PAGES = { feed: CommunityPage, wellbeing: WellbeingPage, support: SupportPage, safety: SafetyPage, reentry: ReentryPage, work: WorkPage, journey: JourneyPage, venue: VenuePage, settings: SettingsPage, family: FamilyPage, learn: LearnPage, match: MatchPage };
@@ -24,6 +25,7 @@ export default function App() {
       <Route element={<Shell />}>
         <Route index element={<Home />} />
         {AREAS.map((a) => { const P = PAGES[a.path]; return <Route key={a.path} path={a.path} element={P ? <P /> : <AreaPage area={a} />} />; })}
+        <Route path="/p/:token" element={<SharedPage />} />
         <Route path="*" element={<Home />} />
       </Route>
     </Routes>

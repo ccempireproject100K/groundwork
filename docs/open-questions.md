@@ -1,7 +1,7 @@
 # Open questions (for Brann)
 
 1. **Brann's 33 reentry steps.** They weren't provided. `backend/app/data/reentry_steps.json` and `.grok/skills/reentry-checklist/references/33-steps.md` are placeholders, and nobody invents them. Which steps land on the 30/60/90/180/365-day milestones?
-2. **The 25 "unassigned" tiers.** Notable ones:
+2. **The 31 "unassigned" tiers.** (Count corrected 2026-11-01 by the gap sweep: the registry holds 49 entries − 11 free − 7 paid = 31 unassigned; older docs said 25.) Notable ones:
    - `locks`: filters are FREE but locks aren't on either list. Should locks be free too, since they're a safety tool?
    - `safe_call_contacts`: this is crisis-adjacent, so free is recommended.
    - `data_wipe`: free is recommended. A privacy escape hatch shouldn't be paywalled.

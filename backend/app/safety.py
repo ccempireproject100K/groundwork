@@ -12,7 +12,13 @@ def crisis_payload(app_name: str) -> dict:
 
 
 # Fields that never leave the server in a payload about another member.
-PRIVATE_MEMBER_FIELDS = {"phone", "email", "password_hash", "vault_key", "legal_name", "address", "dob", "case_number"}
+# welcome_display_name is consent-gated: it may only ever surface through the
+# member's own record or the sanitized welcome feed (app/welcome.py), never
+# in a generic member payload.
+PRIVATE_MEMBER_FIELDS = {"phone", "email", "password_hash", "identities", "google_sub", "vault_key", "legal_name", "address", "dob", "case_number", "welcome_display_name",
+                         # Billing internals (app/billing.py): Stripe linkage and
+                         # plan bookkeeping never appear in a member payload.
+                         "stripe_customer_id", "stripe_subscription_id", "billing_tier", "plan_selected", "paid_at"}
 
 
 def public_member(user: dict) -> dict:

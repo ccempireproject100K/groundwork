@@ -10,5 +10,11 @@ export async function api(path, opts = {}) {
   if (!res.ok) throw Object.assign(new Error(data.detail || `HTTP ${res.status}`), { status: res.status, data });
   return data;
 }
-export const register = (handle, password, tier = "free") => api("/api/auth/register", { method: "POST", body: { handle, password, tier } });
+export const register = (handle, password, tier = "free", welcomeChoice = null, welcomeDisplayName = null) =>
+  api("/api/auth/register", { method: "POST", body: { handle, password, tier, welcome_choice: welcomeChoice, welcome_display_name: welcomeDisplayName } });
 export const login = (handle, password) => api("/api/auth/login", { method: "POST", body: { handle, password } });
+export const getAuthProviders = () => api("/api/auth/providers");
+export const getWelcomeFeed = () => api("/api/welcome/feed");
+export const getWelcomePreference = () => api("/api/welcome/preference");
+export const setWelcomePreference = (choice, displayName = null) =>
+  api("/api/welcome/preference", { method: "PATCH", body: { choice, display_name: displayName } });

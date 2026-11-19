@@ -9,16 +9,22 @@ export default function Shell() {
   const { t } = useTranslation();
   return (
     <div className="shell">
-      <header>
-        <strong className="brand">{APP_NAME}</strong>
+      <header className="shell-header">
+        <div className="brand">
+          <img className="brand-mark" src="/favicon.svg" alt="" />
+          {APP_NAME}
+        </div>
         <CrisisButton />
       </header>
-      <nav aria-label="main">
+      <nav className="shell-nav" aria-label="main">
         <NavLink to="/">{t("nav.home")}</NavLink>
         {AREAS.map((a) => <NavLink key={a.path} to={`/${a.path}`}>{t(`nav.${a.key}`)}</NavLink>)}
       </nav>
-      <main><Outlet /></main>
-      <footer><LanguageSwitcher /></footer>
+      <main className="shell-main"><Outlet /></main>
+      <footer className="shell-footer">
+        <span className="footer-note">{APP_NAME}</span>
+        <LanguageSwitcher />
+      </footer>
     </div>
   );
 }
