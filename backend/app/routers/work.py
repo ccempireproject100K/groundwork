@@ -3,6 +3,7 @@ import html
 import re
 import uuid
 from datetime import datetime, timezone
+from starlette.concurrency import run_in_threadpool
 from fastapi import Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from pydantic import BaseModel, Field
@@ -221,7 +222,7 @@ async def _run_resume_assist(request: Request, user, path: str, make_draft, echo
                                                        "pool": {"pool_cents": check["pool_cents"], "used_cents": check["used_cents"]}})
     try:
         try:
-            data, usages = make_draft()
+            data, usages = await run_in_threadpool(make_draft)
         except ProviderNotConfigured:
             return JSONResponse(status_code=503, content={"detail": NOT_CONFIGURED_COPY})
         except ProviderBadOutput as e:

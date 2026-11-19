@@ -1,5 +1,6 @@
 """Health, feature registry, plan table, and auth (member/family/admin)."""
 import uuid
+from starlette.concurrency import run_in_threadpool
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from .. import federated, registry, safety, security, tiers, welcome
@@ -196,9 +197,9 @@ async def federated_callback(provider: str, request: Request,
         raise HTTPException(400, "invalid or expired sign-in state")
     settings = request.app.state.settings
     try:
-        token = federated.exchange_code(settings, provider, code,
+        token = await run_in_threadpool(federated.exchange_code, settings, provider, code,
                                         str(request.base_url))
-        claims = federated.verify_provider_token(settings, provider, token)
+        claims = await run_in_threadpool(federated.verify_provider_token, settings, provider, token)
     except Exception:
         raise HTTPException(401, "provider sign-in could not be verified")
     user = await _federated_resolve(request, provider, claims)
@@ -226,7 +227,7 @@ async def federated_token(provider: str, body: FederatedTokenIn,
     _require_provider(request, provider)
     settings = request.app.state.settings
     try:
-        claims = federated.verify_provider_token(settings, provider, body.token)
+        claims = await run_in_threadpool(federated.verify_provider_token, settings, provider, body.token)
     except Exception:
         raise HTTPException(401, "provider token could not be verified")
     user = await _federated_resolve(request, provider, claims)

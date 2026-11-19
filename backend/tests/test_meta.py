@@ -31,3 +31,17 @@ def test_every_feature_has_a_stub_route(client):
 def test_plans(client):
     body = client.get("/api/plans").json()
     assert "crisis_button" in body["free"] and "document_vault" in body["paid"]
+
+
+def test_ensure_indexes_runs_on_mock_db():
+    import asyncio
+    from mongomock_motor import AsyncMongoMockClient
+    from app.main import ensure_indexes
+
+    async def go():
+        db = AsyncMongoMockClient()["gw_idx"]
+        await ensure_indexes(db)
+        return await db.users.index_information()
+
+    info = asyncio.run(go())
+    assert any("handle" in k for k in info)

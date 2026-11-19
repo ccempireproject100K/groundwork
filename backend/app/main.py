@@ -10,6 +10,22 @@ ROUTERS = (meta, safety, reentry, work, support, community, journey, wellbeing, 
            family, platform, welcome)
 
 
+async def ensure_indexes(db) -> None:
+    """Indexes for the hot lookups (login, federated sign-in, AI usage meter).
+    Non-unique and best-effort: a failure here must never stop the app starting."""
+    wanted = (
+        ("users", [("handle", 1)]),
+        ("users", [("email", 1)]),
+        ("users", [("identities.provider", 1), ("identities.sub", 1)]),
+        ("ai_usage", [("user_id", 1), ("created_at", 1)]),
+    )
+    for coll, keys in wanted:
+        try:
+            await db[coll].create_index(keys)
+        except Exception:
+            pass
+
+
 def create_app(settings: Settings | None = None, db=None) -> FastAPI:
     settings = settings or load_settings()
 
@@ -19,6 +35,7 @@ def create_app(settings: Settings | None = None, db=None) -> FastAPI:
             from motor.motor_asyncio import AsyncIOMotorClient
 
             app.state.db = AsyncIOMotorClient(settings.mongo_url, tz_aware=True)[settings.db_name]
+            await ensure_indexes(app.state.db)
         yield
 
     app = FastAPI(title=settings.app_name, lifespan=lifespan)
