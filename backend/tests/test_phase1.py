@@ -1,5 +1,5 @@
 import base64, os
-import pytest
+
 from app import moderation
 
 def reg(client, handle="alex", tier="free", phone="817-555-0100"):

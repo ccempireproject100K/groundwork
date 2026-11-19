@@ -1,5 +1,5 @@
 """Platform: read-aloud config, multi-language, music player (sample tracks, off in academy)."""
-from fastapi import APIRouter
+
 from ..i18n_data import LANGS_DATA
 from ..seed_data import MUSIC_TRACKS
 from ._stub import stub_router

@@ -1,5 +1,5 @@
 """Venue: placeholder grey-box preview (paid teaser for free)."""
-from fastapi import APIRouter, Depends, Request
+from fastapi import Depends, Request
 from .. import tiers
 from ..deps import get_current_user
 from ..seed_data import VENUE_STOPS

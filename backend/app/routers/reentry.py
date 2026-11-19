@@ -1,7 +1,7 @@
 """Reentry: 33-step checklist (Brann's exact steps), per-user progress, custom steps, tips, court calendar."""
 import uuid
 from datetime import date, datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from .. import checklist as checklist_lib, crisis_reply, moderation, outbox, registry, safety
 from ..deps import get_current_user

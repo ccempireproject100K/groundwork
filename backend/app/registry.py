@@ -18,7 +18,7 @@ Safety flags:
   always_free  -> can never be gated by a plan (crisis button, relapse protocol)
   lock_exempt  -> locks and filters can never hide or block it
 """
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass
 
 
 @dataclass(frozen=True)

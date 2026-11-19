@@ -1,7 +1,7 @@
 """Matching: paid, deterministic local agent. Dating OFF until Brann sets min days (Q6). Exclusions before negotiation."""
 import uuid
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from .. import safety, tiers
 from ..deps import get_current_user

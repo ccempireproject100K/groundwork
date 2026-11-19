@@ -1,5 +1,5 @@
 """Family mode: member controls visibility; every share defaults off."""
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from ..deps import get_current_user
 from ._stub import stub_router

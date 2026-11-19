@@ -1,7 +1,7 @@
 """Learning: courses + life-skills courses (one module, paid, DRAFT curriculum)."""
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, Request
-from pydantic import BaseModel, Field
+from fastapi import Depends, HTTPException, Request
+from pydantic import BaseModel
 from .. import tiers
 from ..deps import get_current_user
 from ..providers import COURSES

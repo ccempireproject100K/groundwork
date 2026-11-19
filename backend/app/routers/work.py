@@ -3,7 +3,7 @@ import html
 import re
 import uuid
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from pydantic import BaseModel, Field
 from .. import ai_bank, crisis_reply, moderation, safety, tiers as tiers_lib

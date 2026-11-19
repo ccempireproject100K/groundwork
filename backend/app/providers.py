@@ -6,7 +6,7 @@ when it is not — it never falls back to a deterministic fake.
 """
 import json
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 INTERVIEW_QUESTIONS = [
     {"id": "q1", "prompt": "Tell me about a time you solved a problem at work.", "keywords": ["example", "learned", "result", "helped", "finished"]},

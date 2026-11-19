@@ -1,7 +1,7 @@
 """Support: resources, meetings, mentorship, geolocation (opt-in coarse), rides, accountability."""
 import uuid
 from datetime import datetime, timedelta, timezone
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from .. import crisis_reply, moderation, safety
 from ..deps import get_current_user
