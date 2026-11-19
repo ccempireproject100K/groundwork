@@ -32,7 +32,7 @@ INPUT_USD_PER_TOKEN = 1.25 / 1_000_000
 OUTPUT_USD_PER_TOKEN = 4.25 / 1_000_000
 
 ENTRY_POOL_CENTS = 13  # owner's figure for the entry tier, 2026-11-01
-TIER_POOL_CENTS: dict[str, int | None] = {"paid": None, "top": None}  # owner slots
+TIER_POOL_CENTS: dict[str, int | None] = {"paid": None}  # owner slot
 
 # Worst-case cost of one call, enforced by the provider's token caps
 # (spec §5.4): guided <= ~1.1c, import <= ~1.5c. Pre-flight charges the
