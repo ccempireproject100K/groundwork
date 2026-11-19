@@ -11,7 +11,9 @@ Rules (owner's, 2026-11-01):
 - The owner set ONE pool number: 13 cents per member per month for the
   entry tier the résumé assist is earmarked for, sized so his $1-per-member
   profit floor holds exactly ($1.99 - ~36c card fees - 50c referral - 13c
-  pool = $1.00). Per-tier overrides are his slots below; None means "not
+  pool = $1.00). NOTE (2026-11-19): that sizing assumed a $1.99 entry tier;
+  the paid tier is now $3.99/month and the owner has not re-sized the pool.
+  Per-tier overrides are his slots below; None means "not
   set", and until he sets one the entry pool governs every tier that
   includes the feature. Never invent a pool number.
 - Debit is ACTUAL token usage at the published Muse Spark rates, converted

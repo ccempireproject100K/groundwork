@@ -9,7 +9,7 @@
 
 ## Conventions
 - `backend/app/registry.py` is the single source of truth for the 45 features. When a module goes from stub to working, flip its `status` and update docs/features.md.
-- `backend/app/tiers.py` is the only place plans live. Never invent prices; `None` means Brann hasn't decided. Unassigned tiers stay unassigned until Brann assigns them.
+- `backend/app/tiers.py` is the only place plans live. Never invent prices. Brann set them on 2026-11-19 (same as Groundwork YEE): free $0, paid $3.99/month (`price_cents: 399`), no top tier. `None` would mean undecided. Unassigned feature tiers stay unassigned until Brann assigns them.
 - One router file per feature group (`app/routers/<group>.py`). Unbuilt features answer 501 through `_stub.py`.
 - Every UI string goes in `frontend/src/locales/en/*.json`. Other locales fall back to English until a human translates them. Arabic is RTL, so use CSS logical properties (`inline-start`/`inline-end`) and never `left`/`right`.
 - Every collection holding member data must be added to `app/wipe.py` USER_COLLECTIONS. The wipe test enforces this.

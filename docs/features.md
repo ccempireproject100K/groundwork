@@ -9,7 +9,7 @@ Source of truth: `backend/app/registry.py` (tests pin count, sides, tiers, build
 - Getting the own additions to 17: "mood-triggered filters" + "daily reset of filters" = **one** feature (`filters`, the FREE-tier word), and "time-limited locks" + "permanent locks" + "one reminder after a month" = **one** feature (`locks`). Listed separately they would make 20 own additions and 48 total. See open-questions.md Q4.
 - "Video hosting" (PAID) maps to `video_posts`.
 - `relapse_protocol` is **free** because of the safety default, even though the spec's FREE list doesn't name it.
-- Tier `unassigned` = Brann decides. No prices are set anywhere (`tiers.PLANS["paid"]["price_cents"] is None`).
+- Tier `unassigned` = Brann decides. Prices are set by Brann (2026-11-19, same as Groundwork YEE) in `backend/app/tiers.py` only: free $0, paid $3.99/month (`price_cents: 399`). There is no top tier.
 - Upgraded (custom-built): journey_portfolio, ai_matching, community_feed, filters, virtual_venue. Everything else is stock. OSS candidates are named only; nothing is vendored or installed yet.
 
 | # | id | Feature | Side | Tier | Build | Status | OSS candidate / approach |

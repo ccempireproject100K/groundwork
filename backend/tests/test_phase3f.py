@@ -93,7 +93,7 @@ def test_music_player_sample_off_in_academy(client):
 
 def test_hard_rules_and_wipe_cover_new_data(client):
     from app import tiers, wipe
-    assert tiers.PLANS["paid"]["price_cents"] is None
+    assert tiers.PLANS["paid"]["price_cents"] == 399  # set by Brann 2026-11-19
     for coll in ("carpool_entries", "ride_contacts", "ride_ping_sessions", "savings_goals", "housing_plan"):
         assert coll in wipe.USER_COLLECTIONS
     u = reg(client, "wipe_f")

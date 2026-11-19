@@ -30,4 +30,4 @@ def test_no_invented_prices_or_reentry_steps(client):
     assert cat == COURSES  # served exactly as authored; no invented figures
     assert all("33" not in m["content"] for c in cat for m in c["modules"])
     from app import tiers
-    assert tiers.PLANS["paid"]["price_cents"] is None
+    assert tiers.PLANS["paid"]["price_cents"] == 399  # set by Brann 2026-11-19

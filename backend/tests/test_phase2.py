@@ -117,9 +117,9 @@ def test_checklist_not_locked_or_paywalled(client):
     client.post("/api/wellbeing/locks", json={"target": "reentry_checklist", "kind": "permanent"}, headers=auth(u["token"]))
     assert client.get("/api/reentry/reentry_checklist", headers=auth(u["token"])).status_code == 200
     assert client.post("/api/wellbeing/locks", json={"target": "crisis_button", "kind": "week"}, headers=auth(u["token"])).status_code == 422
-    assert client.get("/api/plans").json()["paid"]  # no invented price check in registry tests; checklist is unassigned/open
+    assert client.get("/api/plans").json()["paid"]  # prices are pinned in test_registry; checklist is unassigned/open
     from app import tiers
-    assert tiers.PLANS["paid"]["price_cents"] is None
+    assert tiers.PLANS["paid"]["price_cents"] == 399  # set by Brann 2026-11-19
 
 def test_wipe_covers_new_collections(client):
     from app import wipe

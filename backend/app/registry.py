@@ -10,7 +10,7 @@ of filters" are one feature (`filters`, matching the spec's FREE-tier word
 "filters"), and "time-limited locks" + "permanent locks" + "one reminder after
 a month" are one feature (`locks`). Listing them separately gives 20, not 17.
 
-tier:   "free" | "paid" | "unassigned" (Brann decides; never invent a price)
+tier:   "free" | "paid" | "unassigned" (Brann decides; prices live in tiers.py only: free $0, paid $3.99/month, set 2026-11-19)
 build:  "upgraded" (custom-built) | "stock" (ship from open-source modules)
 status: "stub" until a module really works.
 

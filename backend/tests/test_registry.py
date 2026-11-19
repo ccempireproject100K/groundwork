@@ -41,8 +41,11 @@ def test_tiers_match_spec():
     assert all(f.tier in ("free", "paid", "unassigned") for f in registry.FEATURES)
 
 
-def test_no_invented_prices():
-    assert tiers.PLANS["paid"]["price_cents"] is None
+def test_prices_are_the_ones_brann_set():
+    # Set by Brann 2026-11-19, same prices as Groundwork YEE. No top tier.
+    assert tiers.PLANS["free"]["price_cents"] == 0
+    assert tiers.PLANS["paid"]["price_cents"] == 399
+    assert set(tiers.PLANS) == {"free", "paid"}
 
 
 def test_upgraded_vs_stock():
