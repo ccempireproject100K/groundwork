@@ -2,8 +2,9 @@
 
 Prices were set by Brann (free $0; paid $3.99/month, 2026-11-19, the same
 prices as Groundwork YEE). There is NO top tier and none may be invented.
-Features marked "unassigned" in the registry are listed under neither plan
-until he assigns them. The paid tier's name stays "Paid" until he renames it.
+Brann assigned every feature to a plan on 2026-11-20, so nothing in the
+registry is "unassigned" any more (a test pins that). The paid tier's name
+stays "Paid" until he renames it.
 """
 from fastapi import HTTPException, status
 
@@ -40,7 +41,7 @@ def has_access(user_tier: str, feature_id: str) -> bool:
     if f.always_free or f.tier == "free":
         return True
     if f.tier == "unassigned":
-        return True  # open during the scaffold; gate once Brann assigns it
+        return True  # defensive: no feature is unassigned since 2026-11-20
     return TIER_ORDER.get(user_tier, 0) >= TIER_ORDER[f.tier]
 
 

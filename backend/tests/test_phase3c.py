@@ -6,7 +6,8 @@ def auth(t): return {"Authorization": f"Bearer {t}"}
 def b64(b): return base64.b64encode(b).decode()
 
 def test_events_groups_meetings(client):
-    u = reg(client); v = reg(client, "c2")
+    # virtual_meetings is on the paid plan (owner ruling 2026-11-20): u's tier is set in the database.
+    u = reg(client, tier="paid"); v = reg(client, "c2")
     e = client.post("/api/community/events", json={"title": "Community picnic", "on": "2026-11-10", "city": "Fort Worth"}, headers=auth(u["token"]))
     assert e.status_code == 201
     assert client.post(f"/api/community/events/{e.json()['_id']}/rsvp", headers=auth(v["token"])).json()["count"] == 1
@@ -14,6 +15,8 @@ def test_events_groups_meetings(client):
     assert client.post(f"/api/community/program_groups/{g.json()['_id']}/join", headers=auth(v["token"])).json()["members"] == 2
     m = client.post("/api/community/virtual_meetings", json={"title": "Evening check-in", "on": "2026-11-10"}, headers=auth(u["token"]))
     assert m.status_code == 201 and m.json()["join_path"].startswith("/meet/")
+    assert client.post("/api/community/virtual_meetings", json={"title": "x", "on": "2026-11-10"}, headers=auth(v["token"])).status_code == 402
+    assert client.get("/api/community/virtual_meetings", headers=auth(v["token"])).status_code == 402
 
 def test_media_limits_and_paid_video(client, tmp_path, monkeypatch):
     monkeypatch.setenv("GW_MEDIA_DIR", str(tmp_path))

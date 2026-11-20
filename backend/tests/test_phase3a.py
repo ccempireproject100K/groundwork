@@ -14,7 +14,10 @@ def test_resume_builder(client):
     assert client.delete(f"/api/work/resume_builder/{rid}", headers=auth(u["token"])).status_code == 200
 
 def test_interview_coach_deterministic(client):
-    u = reg(client)
+    # interview_coach is on the paid plan (owner ruling 2026-11-20): the tier is set in the database.
+    free = reg(client, "coachfree")
+    assert client.get("/api/work/interview_coach/questions", headers=auth(free["token"])).status_code == 402
+    u = reg(client, tier="paid")
     qs = client.get("/api/work/interview_coach/questions", headers=auth(u["token"])).json()
     assert len(qs["questions"]) == 3 and qs["provider"] == "deterministic-local-v1"
     weak = client.post("/api/work/interview_coach/sessions", json={"question_id": "q1", "answer": "I dunno."}, headers=auth(u["token"])).json()

@@ -14,7 +14,7 @@ Groundwork is the adults' site: a reentry and recovery social app. One community
 - family mode (member controls visibility, every share defaults to off), AI matching, virtual venue preview, courses, music player, read aloud, dictation
 - federated sign-in (env-gated, see below), a new-member welcome banner, and 90 locales (Arabic, Urdu, Persian, Hebrew, Pashto, Dari and Yiddish are RTL; crisis and safety copy stays English until a human reviews it)
 
-Not done: Brann's clinical and relapse-protocol wording stays a draft for review, tiers for 33 features are unassigned until he assigns them, and no payment provider is built (the paid plan exists only in `backend/app/tiers.py`).
+Not done: Brann's clinical and relapse-protocol wording stays a draft for review, every feature now has a tier (41 free, 10 paid; assigned 2026-11-20), and no payment provider is built (the paid plan exists only in `backend/app/tiers.py`).
 
 ## Plans and prices
 Set by Brann on 2026-11-19, the same on both sites: **Free $0** and **Paid $3.99/month** (`price_cents: 399`). There is no top tier. The paid plan's name stays "Paid". Plans live only in `backend/app/tiers.py`.

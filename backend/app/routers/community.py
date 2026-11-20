@@ -175,12 +175,14 @@ async def join_group(gid: str, request: Request, user=Depends(get_current_user))
 
 @router.post("/virtual_meetings", status_code=201)
 async def create_meeting(body: MeetingIn, request: Request, user=Depends(get_current_user)):
+    tiers_lib.require(user.get("tier", "free"), "virtual_meetings")
     room = uuid.uuid4().hex[:12]
     doc = {"_id": uuid.uuid4().hex, "user_id": user["_id"], **body.model_dump(), "room": room, "join_path": f"/meet/{room}", "provider": "local-room-placeholder"}
     await request.app.state.db.virtual_meetings.insert_one(doc)
     return {k: v for k, v in doc.items()}
 @router.get("/virtual_meetings")
 async def list_meetings2(request: Request, user=Depends(get_current_user)):
+    tiers_lib.require(user.get("tier", "free"), "virtual_meetings")
     items = await request.app.state.db.virtual_meetings.find({}).to_list(100)
     return {"meetings": [{k: v for k, v in d.items()} for d in items]}
 

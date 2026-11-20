@@ -6,8 +6,18 @@ SPEC_FREE = {"crisis_button", "mood_checkins", "filters", "peer_messaging", "ano
              "milestone_celebrations", "twelve_step_locator", "resource_directory", "read_aloud", "multi_language"}
 # relapse_protocol is free by the safety default
 EXPECTED_FREE = SPEC_FREE | {"relapse_protocol"}
+# Owner ruling 2026-11-20 assigned the remaining 33 features.
+RULED_PAID = {"interview_coach", "virtual_meetings", "resume_ai_assist"}
+RULED_ALWAYS_FREE = {"data_wipe", "safe_call_contacts"}
+RULED_FREE = {"reentry_checklist", "court_calendar", "job_board", "resume_builder", "application_tracker",
+              "mentorship", "counseling_referrals", "events", "token_rewards", "community_feed", "program_groups",
+              "photo_posts", "voice_notes", "anonymous_qa", "accountability_partners", "community_groups_directory",
+              "carpool_board", "needs_a_ride", "geolocation", "progress_share_card", "day_one_archive",
+              "family_mode", "merch_rewards", "micro_gigs", "music_player", "housing_savings", "locks",
+              "welcome_banner"} | RULED_ALWAYS_FREE
+EXPECTED_FREE = EXPECTED_FREE | RULED_FREE
 EXPECTED_PAID = {"ai_matching", "document_vault", "journey_portfolio", "video_posts", "courses",
-                 "courses_life_skills", "virtual_venue"}
+                 "courses_life_skills", "virtual_venue"} | RULED_PAID
 UPGRADED = {"journey_portfolio", "ai_matching", "community_feed", "filters", "virtual_venue"}
 
 
@@ -31,14 +41,29 @@ def test_phase3_addons_registered_working():
     for fid, group in (("carpool_board", "support"), ("community_groups_directory", "support"),
                        ("housing_savings", "journey"), ("music_player", "platform")):
         f = registry.get(fid)
-        assert f.status == "working" and f.group == group and f.tier == "unassigned"
+        assert f.status == "working" and f.group == group and f.tier == "free"
 
 
 def test_tiers_match_spec():
     assert set(tiers.features_for("free")) == EXPECTED_FREE
     assert set(tiers.features_for("paid")) == EXPECTED_PAID
-    assert set(tiers.unassigned()) == set(registry.BY_ID) - EXPECTED_FREE - EXPECTED_PAID
-    assert all(f.tier in ("free", "paid", "unassigned") for f in registry.FEATURES)
+    assert set(tiers.unassigned()) == set()
+    assert EXPECTED_FREE | EXPECTED_PAID == set(registry.BY_ID)
+    assert all(f.tier in ("free", "paid") for f in registry.FEATURES)
+
+
+def test_no_feature_is_unassigned_and_ruling_is_applied():
+    assert len(registry.FEATURES) == 51
+    assert tiers.unassigned() == []
+    assert not [f.id for f in registry.FEATURES if f.tier == "unassigned"]
+    assert tiers.plan_table()["unassigned"] == []
+    for fid in RULED_PAID:
+        assert registry.get(fid).tier == "paid"
+        assert not registry.get(fid).always_free
+    for fid in RULED_ALWAYS_FREE:
+        f = registry.get(fid)
+        assert f.tier == "free" and f.always_free and f.lock_exempt
+    assert Counter(f.tier for f in registry.FEATURES) == {"free": 41, "paid": 10}
 
 
 def test_prices_are_the_ones_brann_set():

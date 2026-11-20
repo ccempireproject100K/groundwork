@@ -260,9 +260,11 @@ async def resume_assist_import(body: ResumeImportIn, request: Request, user=Depe
 
 @router.get("/interview_coach/questions")
 async def questions(user=Depends(get_current_user)):
+    tiers_lib.require(user.get("tier", "free"), "interview_coach")
     return {"questions": [{"id": q["id"], "prompt": q["prompt"]} for q in INTERVIEW_QUESTIONS], "provider": coach.name}
 @router.post("/interview_coach/sessions", status_code=201)
 async def answer(body: AnswerIn, request: Request, user=Depends(get_current_user)):
+    tiers_lib.require(user.get("tier", "free"), "interview_coach")
     if body.question_id not in {q["id"] for q in INTERVIEW_QUESTIONS}: raise HTTPException(404, "unknown question")
     result = coach.score(body.question_id, body.answer)
     doc = {"_id": uuid.uuid4().hex, "user_id": user["_id"], "question_id": body.question_id, "answer": body.answer, **result, "created_at": datetime.now(timezone.utc).isoformat()}
@@ -270,6 +272,7 @@ async def answer(body: AnswerIn, request: Request, user=Depends(get_current_user
     return {k: v for k, v in doc.items()}
 @router.get("/interview_coach/sessions")
 async def sessions(request: Request, user=Depends(get_current_user)):
+    tiers_lib.require(user.get("tier", "free"), "interview_coach")
     items = await request.app.state.db.interview_sessions.find({"user_id": user["_id"]}).to_list(100)
     return {"sessions": [{k: v for k, v in d.items()} for d in items]}
 

@@ -144,15 +144,17 @@ def test_import_creates_ai_draft(client, writer):
     assert r.json()["source"] == "ai_import" and r.json()["ai_draft"] is True
 
 
-def test_feature_tier_is_unassigned_so_no_tier_is_invented(client, writer):
-    # The owner has not assigned a tier to resume_ai_assist, so it is open to
-    # every tier during the scaffold; spend is still bounded by the ai_bank
-    # pool, and the whole feature is off until GW_META_MODEL_API_KEY is set.
+def test_feature_is_on_the_paid_plan(client, writer):
+    # Owner ruling 2026-11-20: resume_ai_assist is paid. Free members get 402;
+    # a member whose tier is set in the database gets past the plan check.
     from app import registry
-    assert registry.get("resume_ai_assist").tier == "unassigned"
+    assert registry.get("resume_ai_assist").tier == "paid"
+    body = {"answers": [{"question_id": "name", "answer": "Sam"}]}
     u = reg(client, handle="freeuser", tier="free")
-    r = client.post("/api/work/resume_builder/assist/generate",
-                    json={"answers": [{"question_id": "name", "answer": "Sam"}]}, headers=auth(u["token"]))
+    r = client.post("/api/work/resume_builder/assist/generate", json=body, headers=auth(u["token"]))
+    assert r.status_code == 402 and "paid plan" in r.json()["detail"]
+    p = reg(client, handle="paiduser", tier="paid")
+    r = client.post("/api/work/resume_builder/assist/generate", json=body, headers=auth(p["token"]))
     assert r.status_code != 402 or "month" in r.json()["detail"]
 
 
