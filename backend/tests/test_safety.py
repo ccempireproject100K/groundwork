@@ -83,3 +83,41 @@ def test_relapse_placeholder_carries_crisis_lines(client):
     body = client.get("/api/safety/relapse_protocol/content").json()
     assert body["always_show"] == {"crisis": "988", "emergency": "911"}
     assert body["steps"] == []
+
+
+# ---- listing endpoints never load private fields ----
+
+def test_public_users_projection_excludes_private_fields():
+    import asyncio
+    from mongomock_motor import AsyncMongoMockClient
+    db = AsyncMongoMockClient()["gw_proj"]
+    doc = {"_id": "u1", "handle": "h", "role": "member", "tier": "free", "password_hash": "x", "phone": "1", "email": "e@x.y",
+           "identities": [{"provider": "google", "sub": "s"}], "stripe_customer_id": "cus_1", "welcome_display_name": "N"}
+    asyncio.run(db.users.insert_one(doc))
+    out = asyncio.run(safety.public_users(db, ["u1", "missing"]))
+    assert set(out) == {"u1"}
+    assert not (set(out["u1"]) & safety.PRIVATE_MEMBER_FIELDS)
+    assert out["u1"]["handle"] == "h"
+    assert asyncio.run(safety.public_users(db, [])) == {}
+
+
+def test_member_listings_never_receive_private_fields_from_the_database(client, monkeypatch):
+    from helpers import register_user
+    seen = []
+    real = safety.public_member
+
+    def spy(user):
+        seen.append(set(user))
+        return real(user)
+
+    a = register_user(client, "list_a", phone="817-555-0101")
+    register_user(client, "list_b", phone="817-555-0102")
+    for h in ("list_c", "list_d"):
+        register_user(client, h, role="family")
+    monkeypatch.setattr(safety, "public_member", spy)
+    h = {"Authorization": f"Bearer {a['token']}"}
+    assert client.get("/api/community/members", headers=h).status_code == 200
+    assert client.get("/api/support/geolocation/members", headers=h).status_code in (200, 404)
+    assert seen, "listing did not run"
+    for fields in seen:
+        assert not (fields & safety.PRIVATE_MEMBER_FIELDS), fields

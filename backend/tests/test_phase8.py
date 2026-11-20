@@ -1,8 +1,8 @@
 """Phase 8 gate: showpiece blockers stay respected (open questions 6 + venue photos)."""
+from helpers import register_user
+
 def reg(client, handle, tier="paid"):
-    r = client.post("/api/auth/register", json={"handle": handle, "password": "password123", "phone": "817-555-0100", "tier": tier})
-    assert r.status_code == 201, r.text
-    return r.json()
+    return register_user(client, handle, tier=tier, phone="817-555-0100")
 def auth(t): return {"Authorization": f"Bearer {t}"}
 
 def test_dating_stays_off_until_brann_sets_min_days(client):

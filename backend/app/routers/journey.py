@@ -4,7 +4,7 @@ from datetime import date, datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from fastapi.responses import JSONResponse
-from .. import registry, tiers
+from .. import registry, safety, tiers
 from ..deps import get_current_user
 from ..seed_data import HOUSING_PLAN_STEPS
 from ._stub import stub_router
@@ -165,7 +165,7 @@ async def share_mint(body: ShareIn, request: Request, user=Depends(get_current_u
 
 @router.get("/journey_portfolio/family")
 async def family_view(request: Request, user=Depends(get_current_user), member_handle: str = ""):
-    member = await request.app.state.db.users.find_one({"handle": member_handle})
+    member = await request.app.state.db.users.find_one({"handle": member_handle}, safety.PUBLIC_USER_PROJECTION)
     if not member:
         raise HTTPException(404, "member not found")
     link = await request.app.state.db.family_links.find_one({"member_id": member["_id"]})

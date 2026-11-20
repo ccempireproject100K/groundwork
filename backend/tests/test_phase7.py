@@ -1,8 +1,8 @@
 """Phase 7 gate: people features hold the safety invariants end to end."""
+from helpers import register_user
+
 def reg(client, handle, role="member", tier="free"):
-    r = client.post("/api/auth/register", json={"handle": handle, "password": "password123", "phone": "817-555-0100", "role": role, "tier": tier})
-    assert r.status_code == 201, r.text
-    return r.json()
+    return register_user(client, handle, tier=tier, role=role, phone="817-555-0100")
 def auth(t): return {"Authorization": f"Bearer {t}"}
 
 def test_people_safety_invariants(client):

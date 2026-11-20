@@ -1,7 +1,6 @@
+from helpers import register_user
 def reg(client, handle="fuser", tier="free"):
-    r = client.post("/api/auth/register", json={"handle": handle, "password": "password123", "tier": tier, "phone": "817-555-0100"})
-    assert r.status_code == 201, r.text
-    return r.json()
+    return register_user(client, handle, tier=tier, phone="817-555-0100")
 def auth(t): return {"Authorization": f"Bearer {t}"}
 
 def test_groups_directory_sample_only(client):
@@ -93,7 +92,7 @@ def test_music_player_sample_off_in_academy(client):
 
 def test_hard_rules_and_wipe_cover_new_data(client):
     from app import tiers, wipe
-    assert tiers.PLANS["paid"]["price_cents"] is None
+    assert tiers.PLANS["paid"]["price_cents"] == 399  # set by Brann 2026-11-19
     for coll in ("carpool_entries", "ride_contacts", "ride_ping_sessions", "savings_goals", "housing_plan"):
         assert coll in wipe.USER_COLLECTIONS
     u = reg(client, "wipe_f")

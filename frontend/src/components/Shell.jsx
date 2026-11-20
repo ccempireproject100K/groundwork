@@ -4,21 +4,31 @@ import { APP_NAME } from "../brand";
 import { AREAS } from "../areas";
 import CrisisButton from "./CrisisButton";
 import LanguageSwitcher from "./LanguageSwitcher";
+import MarketFaceSwitcher from "./MarketFaceSwitcher";
+import WelcomeBanner from "./WelcomeBanner";
 
 export default function Shell() {
   const { t } = useTranslation();
   return (
     <div className="shell">
-      <header>
-        <strong className="brand">{APP_NAME}</strong>
+      <header className="shell-header">
+        <div className="brand">
+          <img className="brand-mark" src="/favicon.svg" alt="" />
+          {APP_NAME}
+        </div>
         <CrisisButton />
       </header>
-      <nav aria-label="main">
+      <WelcomeBanner />
+      <nav className="shell-nav" aria-label="main">
         <NavLink to="/">{t("nav.home")}</NavLink>
         {AREAS.map((a) => <NavLink key={a.path} to={`/${a.path}`}>{t(`nav.${a.key}`)}</NavLink>)}
       </nav>
-      <main><Outlet /></main>
-      <footer><LanguageSwitcher /></footer>
+      <main className="shell-main"><Outlet /></main>
+      <footer className="shell-footer">
+        <span className="footer-note">{APP_NAME}</span>
+        <LanguageSwitcher />
+        <MarketFaceSwitcher />
+      </footer>
     </div>
   );
 }

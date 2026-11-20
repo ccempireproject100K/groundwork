@@ -1,7 +1,7 @@
 """Support: resources, meetings, mentorship, geolocation (opt-in coarse), rides, accountability."""
 import uuid
 from datetime import datetime, timedelta, timezone
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from .. import crisis_reply, moderation, safety
 from ..deps import get_current_user
@@ -84,7 +84,7 @@ async def mentor_profile(body: MentorIn, request: Request, user=Depends(get_curr
 @router.get("/mentorship/mentors")
 async def mentors(request: Request, user=Depends(get_current_user)):
     items = await request.app.state.db.mentors.find({"role": "mentor", "user_id": {"$ne": user["_id"]}}).to_list(100)
-    users = {u["_id"]: u for u in await request.app.state.db.users.find({}).to_list(200)}
+    users = await safety.public_users(request.app.state.db, [d["user_id"] for d in items])
     out = []
     for d in items:
         out.append({"handle": d.get("handle"), "topics": d.get("topics", []), "bio": d.get("bio", ""), "member": safety.public_member(users.get(d["user_id"], {}))})
@@ -117,7 +117,7 @@ async def my_location(request: Request, user=Depends(get_current_user)):
 @router.get("/geolocation/members")
 async def member_locations(request: Request, user=Depends(get_current_user)):
     items = await request.app.state.db.locations.find({"user_id": {"$ne": user["_id"]}}).to_list(100)
-    users = {u["_id"]: u for u in await request.app.state.db.users.find({}).to_list(200)}
+    users = await safety.public_users(request.app.state.db, [d["user_id"] for d in items])
     return {"members": [{"member": safety.public_member(users.get(d["user_id"], {})), "city": d.get("city")} for d in items]}
 @router.delete("/geolocation")
 async def clear_location(request: Request, user=Depends(get_current_user)):
@@ -136,7 +136,7 @@ async def ride_req(body: RideIn, request: Request, user=Depends(get_current_user
 @router.get("/needs_a_ride/requests")
 async def ride_list(request: Request, user=Depends(get_current_user)):
     items = await request.app.state.db.ride_requests.find({"status": "published"}).to_list(100)
-    users = {u["_id"]: u for u in await request.app.state.db.users.find({}).to_list(200)}
+    users = await safety.public_users(request.app.state.db, [d["user_id"] for d in items])
     return {"requests": [{**{k: v for k, v in d.items() if k != "user_id"}, "requester": safety.public_member(users.get(d["user_id"], {}))} for d in items], "note": "Phone numbers are never shown. Meet in a public place."}
 @router.post("/needs_a_ride/offers", status_code=201)
 async def ride_offer(body: RideOfferIn, request: Request, user=Depends(get_current_user)):
@@ -200,7 +200,7 @@ async def carpool_list(request: Request, user=Depends(get_current_user), meeting
     if city:
         q["city"] = city
     items = await request.app.state.db.carpool_entries.find(q).to_list(200)
-    users = {u["_id"]: u for u in await request.app.state.db.users.find({}).to_list(200)}
+    users = await safety.public_users(request.app.state.db, [d["user_id"] for d in items])
     return {"entries": [{**{k: v for k, v in d.items() if k != "user_id"}, "member": safety.public_member(users.get(d["user_id"], {}))} for d in items],
             "note": "Opt-in, city-level only. Connect through in-app peer messaging. Phone numbers are never shown."}
 
@@ -333,5 +333,5 @@ async def my_group(request: Request, user=Depends(get_current_user)):
     me = await request.app.state.db.accountability.find_one({"user_id": user["_id"]})
     if not me: return {"group": None, "members": []}
     items = await request.app.state.db.accountability.find({"group_id": me["group_id"]}).to_list(10)
-    users = {u["_id"]: u for u in await request.app.state.db.users.find({}).to_list(200)}
+    users = await safety.public_users(request.app.state.db, [d["user_id"] for d in items])
     return {"group": me["group_id"], "complete": me.get("group_complete", False), "members": [safety.public_member(users.get(d["user_id"], {})) for d in items]}

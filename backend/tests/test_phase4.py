@@ -1,7 +1,6 @@
+from helpers import register_user
 def reg(client, handle="juser", tier="paid", role="member"):
-    r = client.post("/api/auth/register", json={"handle": handle, "password": "password123", "tier": tier, "phone": "817-555-0100", "role": role})
-    assert r.status_code == 201, r.text
-    return r.json()
+    return register_user(client, handle, tier=tier, role=role, phone="817-555-0100")
 def auth(t): return {"Authorization": f"Bearer {t}"}
 
 def test_portfolio_private_by_default_and_owner_crud(client):

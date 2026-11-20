@@ -24,3 +24,10 @@ Correction 2026-11-01 (Brann): Russian was NOT cut from Groundwork. It stays in 
 - Russian is translated by Grok Bot or Muse like the other languages. Never mark it done without counting strings that still match English.
 - Iran and Myanmar keep their do-not-target flags, unchanged.
 - This replaces the 2026-10-30 note that dropped Russian from the target list.
+
+## Price strings (updated 2026-11-19)
+
+`safety.vaultHelp` and `phase3.paidNote` now state the paid price ($3.99/month, set by Brann; see
+`backend/app/tiers.py`). Every locale keeps the English text for both until a human translates them.
+The review drafts in `docs/review/protected-*.json` for these two keys were written against the old
+"no price has been set yet" wording and are stale: redo them before using them.

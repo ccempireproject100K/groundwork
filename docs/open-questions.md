@@ -1,12 +1,12 @@
 # Open questions (for Brann)
 
 1. **Brann's 33 reentry steps.** They weren't provided. `backend/app/data/reentry_steps.json` and `.grok/skills/reentry-checklist/references/33-steps.md` are placeholders, and nobody invents them. Which steps land on the 30/60/90/180/365-day milestones?
-2. **The 25 "unassigned" tiers.** Notable ones:
+2. **Feature tiers: decided by Brann, 2026-11-20.** The last 33 unassigned tiers were assigned: paid = `interview_coach`, `virtual_meetings`, `resume_ai_assist`; free and always free = `data_wipe`, `safe_call_contacts`; the other 28 are free. Nothing is unassigned now (41 free, 10 paid). Earlier notes on this item:
    - `locks`: filters are FREE but locks aren't on either list. Should locks be free too, since they're a safety tool?
    - `safe_call_contacts`: this is crisis-adjacent, so free is recommended.
    - `data_wipe`: free is recommended. A privacy escape hatch shouldn't be paywalled.
    - `community_feed`, `photo_posts`, `voice_notes`, `events`, `virtual_meetings`, `mentorship`, the work tools, `family_mode`, `merch_rewards`.
-   - The paid price, and whether there's more than one paid plan. Nothing is priced in code.
+   - **Decided by Brann, 2026-11-19:** free $0 and one paid plan at $3.99/month (`price_cents: 399` in `backend/app/tiers.py`), the same prices as Groundwork YEE. No top tier. Still open: the paid plan's name (stays "Paid") (the feature split was decided on 2026-11-20, see above).
 3. **Anonymity vs. safety.** Anonymous posts hide the author from members. Can moderators or staff see who wrote an anonymous post when it signals a crisis or a threat? Is there a policy for law-enforcement requests? This decides whether author ids are stored at all and who can read them.
    - **Decided by Brann, 2026-10-31 (crisis part):** staff see nothing. Crisis phrasing in any post, comment, tip, Q&A or message triggers a private crisis auto-reply (988 call/text, 911, Crisis Text Line HOME to 741741, link to the crisis button and safe contacts) delivered only to the author, in the post response and in their private inbox (`/api/safety/private_inbox`). The post is not held, flagged or altered for crisis; there's no moderation-queue entry, admin endpoint, or log line, and the inbox entry holds no post id or text. Threats and law-enforcement policy are still open.
 4. **Feature count.** The spec's own-additions list reads as 20 items if filters (2) and locks (3) are split out. The scaffold groups them so the total stays 45. Confirm, or the registry becomes 48.

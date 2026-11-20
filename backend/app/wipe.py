@@ -6,6 +6,8 @@ Open question: any legal-hold / audit-log retention (see docs/open-questions.md)
 """
 USER_COLLECTIONS = {
     "users": "_id",
+    "ai_usage": "user_id",
+    "welcome_announcements": "user_id",
     "vault_keys": "user_id",
     "vault_docs": "user_id",
     "checklist_progress": "user_id",
@@ -57,6 +59,7 @@ USER_COLLECTIONS = {
     "ride_ping_sessions": "user_id",
     "savings_goals": "user_id",
     "housing_plan": "user_id",
+    "stripe_events": "user_id",
 }
 
 

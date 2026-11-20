@@ -1,9 +1,8 @@
+from helpers import register_user
 from datetime import datetime, timezone
 
 def reg(client, handle="phase5user"):
-    r = client.post("/api/auth/register", json={"handle": handle, "password": "password123", "phone": "817-555-0100"})
-    assert r.status_code == 201, r.text
-    return r.json()
+    return register_user(client, handle, phone="817-555-0100")
 def auth(t): return {"Authorization": f"Bearer {t}"}
 
 def test_court_date_queues_outbox_reminder(client, db):

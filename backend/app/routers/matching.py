@@ -1,7 +1,7 @@
 """Matching: paid, deterministic local agent. Dating OFF until Brann sets min days (Q6). Exclusions before negotiation."""
 import uuid
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from .. import safety, tiers
 from ..deps import get_current_user
@@ -66,7 +66,7 @@ async def run(request: Request, user=Depends(get_current_user)):
     if not me_doc: raise HTTPException(422, "set a matching profile first")
     me = _brief(me_doc, user)
     others = await request.app.state.db.match_profiles.find({"user_id": {"$ne": user["_id"]}}).to_list(100)
-    users = {u["_id"]: u for u in await request.app.state.db.users.find({}).to_list(200)}
+    users = await safety.public_users(request.app.state.db, [d["user_id"] for d in others])
     await request.app.state.db.matches.delete_many({"user_id": user["_id"]})
     results = []
     for od in others:

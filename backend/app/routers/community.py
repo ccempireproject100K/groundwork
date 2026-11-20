@@ -1,7 +1,7 @@
 """Community: feed, anonymous posting, peer messaging (no phone numbers)."""
 import uuid
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from .. import crisis_reply, moderation, safety
 from ..deps import get_current_user
@@ -63,14 +63,14 @@ async def anon_post(body: PostIn, request: Request, user=Depends(get_current_use
 
 @router.get("/members")
 async def members(request: Request, user=Depends(get_current_user)):
-    items = await request.app.state.db.users.find({"_id": {"$ne": user["_id"]}}).to_list(100)
+    items = await request.app.state.db.users.find({"_id": {"$ne": user["_id"]}}, safety.PUBLIC_USER_PROJECTION).to_list(100)
     return {"members": [safety.public_member(d) for d in items]}
 
 @router.post("/peer_messaging/messages", status_code=201)
 async def send_msg(body: MsgIn, request: Request, user=Depends(get_current_user)):
     if await _locked(request, user, "peer_messaging"):
         raise HTTPException(423, "peer_messaging is locked")
-    recip = await request.app.state.db.users.find_one({"_id": body.recipient_id}) or await request.app.state.db.users.find_one({"handle": body.recipient_id})
+    recip = await request.app.state.db.users.find_one({"_id": body.recipient_id}, safety.PUBLIC_USER_PROJECTION) or await request.app.state.db.users.find_one({"handle": body.recipient_id}, safety.PUBLIC_USER_PROJECTION)
     if not recip:
         raise HTTPException(404, "recipient not found")
     body_recipient_id = recip["_id"]
@@ -91,7 +91,7 @@ async def list_msgs(request: Request, user=Depends(get_current_user)):
 
 @router.get("/peer_messaging/conversation/{other_id}")
 async def convo(other_id: str, request: Request, user=Depends(get_current_user)):
-    other = await request.app.state.db.users.find_one({"_id": other_id}) or await request.app.state.db.users.find_one({"handle": other_id})
+    other = await request.app.state.db.users.find_one({"_id": other_id}, safety.PUBLIC_USER_PROJECTION) or await request.app.state.db.users.find_one({"handle": other_id}, safety.PUBLIC_USER_PROJECTION)
     if other:
         other_id = other["_id"]
     if not other:
@@ -175,12 +175,14 @@ async def join_group(gid: str, request: Request, user=Depends(get_current_user))
 
 @router.post("/virtual_meetings", status_code=201)
 async def create_meeting(body: MeetingIn, request: Request, user=Depends(get_current_user)):
+    tiers_lib.require(user.get("tier", "free"), "virtual_meetings")
     room = uuid.uuid4().hex[:12]
     doc = {"_id": uuid.uuid4().hex, "user_id": user["_id"], **body.model_dump(), "room": room, "join_path": f"/meet/{room}", "provider": "local-room-placeholder"}
     await request.app.state.db.virtual_meetings.insert_one(doc)
     return {k: v for k, v in doc.items()}
 @router.get("/virtual_meetings")
 async def list_meetings2(request: Request, user=Depends(get_current_user)):
+    tiers_lib.require(user.get("tier", "free"), "virtual_meetings")
     items = await request.app.state.db.virtual_meetings.find({}).to_list(100)
     return {"meetings": [{k: v for k, v in d.items()} for d in items]}
 

@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 import { api } from "../api";
 import ReadAloud from "../components/ReadAloud";
 import { REENTRY_SECTIONS, REENTRY_STEPS, celebrationsFor, sectionProgress } from "../data/reentrySteps";
-import TranslationCheck from "../components/TranslationCheck";
 
 export default function ReentryPage() {
   const { t } = useTranslation();
@@ -15,6 +14,10 @@ export default function ReentryPage() {
   const [tips, setTips] = useState({});
   const [openTips, setOpenTips] = useState({});
   const [serverMsg, setServerMsg] = useState("");
+  const [courtDates, setCourtDates] = useState([]);
+  const [courtOn, setCourtOn] = useState("");
+  const [courtName, setCourtName] = useState("");
+  const [courtNotes, setCourtNotes] = useState("");
 
   useEffect(() => {
     api("/api/reentry/reentry_checklist").then((d) => {
@@ -26,7 +29,20 @@ export default function ReentryPage() {
       }
       if (d.custom_steps) setCustom(d.custom_steps);
     }).catch(() => {});
+    loadCourt();
   }, []);
+
+  async function loadCourt() {
+    try { const d = await api("/api/reentry/court_calendar"); setCourtDates(d.court_dates || []); } catch {}
+  }
+  async function addCourt() {
+    if (!courtOn || !courtName.trim()) return;
+    try {
+      await api("/api/reentry/court_calendar", { method: "POST", body: { on: courtOn, court: courtName.trim(), notes: courtNotes || null } });
+      setCourtOn(""); setCourtName(""); setCourtNotes("");
+      loadCourt();
+    } catch (e) { setServerMsg(e.message); }
+  }
 
   const sections = useMemo(() => sectionProgress([...done]), [done]);
   const celebrations = useMemo(() => celebrationsFor([...done]), [done]);
@@ -71,7 +87,6 @@ export default function ReentryPage() {
       <div data-testid="checklist-crisis">
         <p>{t("reentry.crisisStep")}</p>
         <a href="tel:988">{t("crisis.call988")}</a>{" · "}<a href="sms:988">{t("crisis.text988")}</a>{" · "}<a href="tel:911">{t("crisis.call911")}</a>
-        <TranslationCheck keys={["reentry.crisisStep", "crisis.call988", "crisis.text988", "crisis.call911"]} />
       </div>
       <p data-testid="overall-progress">{t("reentry.progress")}: {totalDone}/33</p>
       {celebrations.length > 0 && (
@@ -98,9 +113,7 @@ export default function ReentryPage() {
                     <label>{t("reentry.notes")} <input aria-label={`${t("reentry.notes")} ${step.id}`} value={m.notes} onChange={(e) => updateMeta(step.id, { notes: e.target.value })} /></label>
                     <button type="button" onClick={() => saveMeta(step)}>{t("reentry.save")}</button>
                     {step.resource_pointer && <p>{t("reentry.resourceOnly")} <a href="tel:211">{t("reentry.call211")}</a></p>}
-                    {step.resource_pointer && <TranslationCheck keys="reentry.call211" />}
                     {step.id === 11 && <p data-testid="step11-crisis"><a href="tel:988">{t("crisis.call988")}</a>{" · "}<a href="tel:911">{t("crisis.call911")}</a></p>}
-                    {step.id === 11 && <TranslationCheck keys={["crisis.call988", "crisis.call911"]} />}
                     <button type="button" onClick={() => loadTips(step.id)}>{t("reentry.tipsTitle")}</button>
                     {openTips[step.id] && (
                       <div data-testid={`tips-${step.id}`}>
@@ -122,6 +135,16 @@ export default function ReentryPage() {
       <button type="button" onClick={addCustom}>{t("reentry.addStep")}</button>
       <ul>{custom.map((c) => <li key={c._id}>{c.title}</li>)}</ul>
       <p>{t("reentry.milestones")}: 30, 60, 90, 180, 365</p>
+      <div data-testid="court-section">
+        <h3>{t("gap.courtTitle")}</h3>
+        <label>{t("gap.courtDate")} <input type="date" value={courtOn} onChange={(e) => setCourtOn(e.target.value)} /></label>
+        <label>{t("gap.courtName")} <input value={courtName} onChange={(e) => setCourtName(e.target.value)} /></label>
+        <label>{t("reentry.notes")} <input value={courtNotes} onChange={(e) => setCourtNotes(e.target.value)} /></label>
+        <button type="button" onClick={addCourt}>{t("gap.courtAdd")}</button>
+        {courtDates.length === 0 ? <p>{t("gap.courtEmpty")}</p> : (
+          <ul>{courtDates.map((c) => <li key={c._id}>{c.on} — {c.court}{c.notes ? ` · ${c.notes}` : ""}</li>)}</ul>
+        )}
+      </div>
       {serverMsg && <p role="status">{serverMsg}</p>}
     </section>
   );

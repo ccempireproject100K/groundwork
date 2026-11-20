@@ -1,11 +1,10 @@
+from helpers import register_user
 import json
 from pathlib import Path
 from app import checklist as cl
 
 def reg(client, handle="p2user", tier="free"):
-    r = client.post("/api/auth/register", json={"handle": handle, "password": "password123", "tier": tier, "phone": "817-555-0100"})
-    assert r.status_code == 201, r.text
-    return r.json()
+    return register_user(client, handle, tier=tier, phone="817-555-0100")
 def auth(t): return {"Authorization": f"Bearer {t}"}
 
 TITLES = ["Order your birth certificate","Request your Social Security card","Start the state ID application","Set goals with your case manager","Plan your ride home","Line up one support contact","Find a safe place to stay (call 211 or local housing resources)","Find food for this week (call 211 or a local food pantry)","Check your release papers and deadlines","Confirm your first check-in date and conditions","Save 988 and 911 in your phone","Get your state ID","Get a phone, email and free internet access","Put every court date and check-in on a calendar","Contact local reentry services","Know your supervision conditions","Check your fines, fees and restitution","Check your driver's license status","Enroll in Medicaid, and SNAP if you need it","Get your health records","Make a medication plan","Book a doctor's appointment","Book a mental health appointment","Get a substance use evaluation","Find a support group","Build your resume","Apply to second-chance employers","Look into training or certificates","Open a bank account and make a budget","Start rebuilding your credit","Reconnect with family, and handle child support if it applies","Set a daily routine","Set one long-term goal and celebrate your 90-day milestone"]
@@ -117,9 +116,9 @@ def test_checklist_not_locked_or_paywalled(client):
     client.post("/api/wellbeing/locks", json={"target": "reentry_checklist", "kind": "permanent"}, headers=auth(u["token"]))
     assert client.get("/api/reentry/reentry_checklist", headers=auth(u["token"])).status_code == 200
     assert client.post("/api/wellbeing/locks", json={"target": "crisis_button", "kind": "week"}, headers=auth(u["token"])).status_code == 422
-    assert client.get("/api/plans").json()["paid"]  # no invented price check in registry tests; checklist is unassigned/open
+    assert client.get("/api/plans").json()["paid"]  # prices are pinned in test_registry; checklist is unassigned/open
     from app import tiers
-    assert tiers.PLANS["paid"]["price_cents"] is None
+    assert tiers.PLANS["paid"]["price_cents"] == 399  # set by Brann 2026-11-19
 
 def test_wipe_covers_new_collections(client):
     from app import wipe

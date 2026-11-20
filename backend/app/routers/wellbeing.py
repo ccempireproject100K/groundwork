@@ -1,7 +1,7 @@
 """Wellbeing: mood check-ins, filters, locks. Crisis never blocked."""
 import uuid
 from datetime import date, datetime, timedelta, timezone
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from .. import locks as lock_policy, outbox
 from ..deps import get_current_user

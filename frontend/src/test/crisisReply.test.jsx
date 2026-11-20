@@ -38,7 +38,14 @@ describe("private crisis auto-reply", () => {
     render(<MemoryRouter><CommunityPage /></MemoryRouter>);
     fireEvent.change(screen.getByLabelText(/Share/), { target: { value: "hi" } });
     fireEvent.click(screen.getByText("Post"));
-    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(4));
+    // The post flow reloads the feed after posting (initial GET + POST + reload
+    // GET on the posts endpoint). The page also loads its other wired sections
+    // (events, groups, meetings, inbox, media), so an exact total fetch count
+    // is not the property under test — the reload + no notice is.
+    await waitFor(() => {
+      const postLoads = fetch.mock.calls.filter(([u, o]) => u === "/api/community/community_feed/posts" && !o?.method).length;
+      expect(postLoads).toBeGreaterThanOrEqual(2);
+    });
     expect(screen.queryByTestId("crisis-notice")).toBeNull();
   });
   it("safety page shows the caller's own private inbox", async () => {

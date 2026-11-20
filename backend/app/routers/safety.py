@@ -1,7 +1,7 @@
 """Safety group: crisis, relapse, safe-call contacts, vault, wipe. Lock-exempt items never gated."""
 import base64, json, uuid
 from pathlib import Path
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from .. import safety, tiers, vault_crypto, wipe
 from ..deps import get_current_user

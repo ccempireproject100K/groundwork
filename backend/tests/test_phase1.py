@@ -1,11 +1,10 @@
+from helpers import register_user
 import base64, os
-import pytest
+
 from app import moderation
 
 def reg(client, handle="alex", tier="free", phone="817-555-0100"):
-    r = client.post("/api/auth/register", json={"handle": handle, "password": "password123", "tier": tier, "phone": phone})
-    assert r.status_code == 201, r.text
-    return r.json()
+    return register_user(client, handle, tier=tier, phone=phone)
 
 def auth(tok):
     return {"Authorization": f"Bearer {tok}"}

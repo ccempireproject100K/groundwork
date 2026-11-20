@@ -8,8 +8,8 @@
 - Tests use mongomock-motor. Node 20 on the box, so jsdom is pinned at 26.
 
 ## Conventions
-- `backend/app/registry.py` is the single source of truth for the 45 features. When a module goes from stub to working, flip its `status` and update docs/features.md.
-- `backend/app/tiers.py` is the only place plans live. Never invent prices; `None` means Brann hasn't decided. Unassigned tiers stay unassigned until Brann assigns them.
+- `backend/app/registry.py` is the single source of truth for the 51 features. When a module goes from stub to working, flip its `status` and update docs/features.md.
+- `backend/app/tiers.py` is the only place plans live. Never invent prices. Brann set them on 2026-11-19 (same as Groundwork YEE): free $0, paid $3.99/month (`price_cents: 399`), no top tier. `None` would mean undecided. Brann assigned the remaining feature tiers on 2026-11-20 (3 paid: interview_coach, virtual_meetings, resume_ai_assist; 2 always free: data_wipe, safe_call_contacts; the rest free), so no feature is unassigned. Do not change a tier without his say-so.
 - One router file per feature group (`app/routers/<group>.py`). Unbuilt features answer 501 through `_stub.py`.
 - Every UI string goes in `frontend/src/locales/en/*.json`. Other locales fall back to English until a human translates them. Arabic is RTL, so use CSS logical properties (`inline-start`/`inline-end`) and never `left`/`right`.
 - Every collection holding member data must be added to `app/wipe.py` USER_COLLECTIONS. The wipe test enforces this.
@@ -22,7 +22,7 @@
 - Never commit secrets. Config comes from `GW_*` env vars.
 
 ## Safety defaults (tests pin these; do not weaken them)
-1. The crisis button and relapse protocol are always free, never behind a paywall, and never hidden by locks or filters (`always_free`, `lock_exempt`).
+1. The crisis button, relapse protocol, safe-call contacts and data wipe are always free, never behind a paywall, and never hidden by locks or filters (`always_free`, `lock_exempt`).
 2. The crisis surfaces show **988** (call or text) and **911**. The crisis button renders on every screen (Shell).
 3. Peer messaging never exposes phone numbers. Use `safety.public_member()` for any other-member payload.
 4. Anonymous posts are anonymous to other members. Use `safety.public_post()`, which strips author id, handle, avatar and location.
@@ -33,4 +33,4 @@
 9. Locks and filters can never block lock-exempt features (crisis, relapse, safe-call contacts, wipe).
 
 ## Project skills
-`.grok/skills/` holds the project skills: reentry-checklist, recovery-moderation, milestone-merch, sober-venue-web, course-generation, journey-portfolio, ai-matcher, mood-filters and venue-threejs.
+`.grok/skills/` holds the project skills: reentry-checklist, recovery-moderation, milestone-merch, sober-venue-web, course-generation, journey-portfolio, ai-matcher, brothers-keeper (spec only, no code), mood-filters and venue-threejs.
