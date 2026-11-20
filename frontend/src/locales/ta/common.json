@@ -589,5 +589,13 @@
   },
   "translationCheck": {
     "notice": "மொழிபெயர்ப்பு ஆங்கிலத்துடன் பொருந்துகிறதா என மீண்டும் பார்."
+  },
+  "marketFace": {
+    "label": "Your market",
+    "automatic": "Automatic (detect my location)",
+    "choice": "You are seeing the {{name}} edition, your saved choice.",
+    "detected": "We detected {{name}} as your location. Wrong? Pick yours.",
+    "defaultNote": "You are seeing the United States edition, our default. Pick yours if that is not you.",
+    "usd": "All prices are in US dollars (USD)."
   }
 }

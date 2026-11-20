@@ -58,6 +58,10 @@ class Settings:
     login_window_seconds: int = 900
     login_lockout_seconds: int = 900
     trusted_proxies: int = 0
+    # Market face (app/marketface.py): when true, the edge's CF-IPCountry header
+    # picks the visitor's face if they have no stored choice. Off: stored choice,
+    # else the US default.
+    trust_cf_country: bool = False
 
 
 
@@ -106,4 +110,5 @@ def load_settings() -> Settings:
         login_window_seconds=max(1, _int_env("GW_LOGIN_WINDOW_SECONDS", 900)),
         login_lockout_seconds=max(1, _int_env("GW_LOGIN_LOCKOUT_SECONDS", 900)),
         trusted_proxies=_int_env("GW_TRUSTED_PROXIES", 0),
+        trust_cf_country=os.environ.get("GW_TRUST_CF_COUNTRY", "").strip().lower() in ("1", "true", "yes"),
     )

@@ -4,13 +4,13 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from .config import Settings, load_settings
-from .routers import (billing, community, family, journey, learning, matching, meta, platform, reentry, safety,
+from .routers import (billing, community, family, journey, learning, matching, market, meta, platform, reentry, safety,
                       support, venue, welcome, wellbeing, work)
 
 log = logging.getLogger("groundwork.startup")
 
 ROUTERS = (meta, safety, reentry, work, support, community, journey, wellbeing, learning, matching, venue,
-           family, platform, welcome, billing)
+           family, platform, welcome, billing, market)
 
 
 async def ensure_unique_handle_index(db) -> bool:

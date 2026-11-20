@@ -4,6 +4,7 @@ import { APP_NAME } from "../brand";
 import { AREAS } from "../areas";
 import CrisisButton from "./CrisisButton";
 import LanguageSwitcher from "./LanguageSwitcher";
+import MarketFaceSwitcher from "./MarketFaceSwitcher";
 import WelcomeBanner from "./WelcomeBanner";
 
 export default function Shell() {
@@ -26,6 +27,7 @@ export default function Shell() {
       <footer className="shell-footer">
         <span className="footer-note">{APP_NAME}</span>
         <LanguageSwitcher />
+        <MarketFaceSwitcher />
       </footer>
     </div>
   );

@@ -953,3 +953,8 @@ main .card-list li, main .quiz-options li, main .venue-stops li, main .card-grid
   .welcome-messages { white-space: normal; flex-wrap: wrap; }
   .parade-float { animation: none; }
 }
+
+/* Market face switcher (lib/marketFace.js) */
+.market-switch { flex-basis: 100%; }
+.market-switch label { margin-block: 0; }
+.market-switch .muted { margin-block: .35rem 0; }

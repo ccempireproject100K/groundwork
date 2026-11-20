@@ -222,6 +222,7 @@ export default function SettingsPage() {
               <button type="button" className="btn" onClick={doUpgrade} disabled={checkoutBusy}>
                 {t("settings.upgrade")} ({t("settings.upgradePrice", { price: `$${(billing.plan.price_cents / 100).toFixed(2)}` })})
               </button>
+              <span className="muted">{t("marketFace.usd")}</span>
             </div>
           )}
           <button type="button" className="btn-ghost" onClick={doLogout}>
